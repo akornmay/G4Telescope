@@ -46,7 +46,7 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 HistoManager::HistoManager()
-  :fChain(0)
+  :fChain(0),fTurn(0),fBucket(0)
 {
 
 }
@@ -134,17 +134,6 @@ void HistoManager::open(G4String QIEFileName)
   fChain->SetBranchStatus("BeamIntensity",true);
   fChain->SetBranchAddress("BeamIntensity",BeamIntensity);
 
-  //Set event number to 0
-  fTurn = 0;
-  fBucket = 0;
-
-  //check what we actually loaded
-  //  for(int i =0; i<100 ; ++i)
-  //{
-  //  fChain->GetEntry(i);
-
-  //  G4cout << BeamIntensity[32] << G4endl;
-  // }
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -256,5 +245,19 @@ void HistoManager::AddEmptyEvent(G4int EventNumber, G4int PixelTestBoard)
       G4cout << "Filling straight" << G4endl;
       fTreeStraight->Fill();
     }
+
+}
+
+
+G4int HistoManager::GetFirstTurn()
+{
+  return firstTurn;
+}
+
+void HistoManager::SetFirstTurn(G4int first)
+{
+
+  fTurn = firstTurn = first;
+  eventNr = firstTurn * 588;
 
 }

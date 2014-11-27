@@ -67,7 +67,10 @@ public:
  
   G4int NumberOfP;
   G4long TotalNumberOfParticles; 
-  
+
+  void SetFirstTurn(G4int first);
+  G4int GetFirstTurn();
+
 private:
 
   TFile* fOutFileTilted;
@@ -87,6 +90,7 @@ private:
   G4int fTurn;
   G4int fBucket;
 
+  G4int firstTurn;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

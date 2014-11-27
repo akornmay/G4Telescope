@@ -55,6 +55,69 @@
 #include "Randomize.hh"
 
 
+
+void ReadSettings(char* confFile, HistoManager* histo)
+{
+  //  G4cout << "Reading configuration from file" << G4endl;
+
+  if(confFile[0]=='\0')
+    {
+      G4cout << "Using default parameters" << G4endl;
+      
+      
+      histo->SetFirstTurn(0);
+
+    }
+  else
+    {
+      std::ifstream istr(confFile,std::ios::in);
+      if(!istr)
+	{
+	  G4cout << "Error: File \"" << confFile << "\" doesn't exist."  << G4endl;
+      	}
+      char buf[255];
+      G4String Parameter;
+      G4String Value;
+
+      char equal;
+
+      while(!istr.eof() && !istr.fail())
+	{
+	  istr>>Parameter;
+	  if(Parameter[0]=='#')
+	    {
+	      istr.getline(buf,255);
+	      continue;
+	    }
+	  istr >> equal >> Value;
+	  istr.getline(buf,255);
+
+	  if(equal!='=')
+	    {
+	      G4cout << "Error: Syntax error for parameter " << Parameter << G4endl;
+	      continue;
+	    }
+
+	  if(Parameter=="FIRST_TURN")
+	    {
+	      histo->SetFirstTurn(atol(Value.c_str()));
+	      continue;
+	    }
+
+	  if(Parameter=="LAST_TURN")
+	    {
+	      continue;
+	    }
+	}
+
+    }
+
+  G4cout << "RUNNING simulation from turn " << histo->GetFirstTurn() << G4endl;
+
+}
+
+
+
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 int main(int argc,char** argv)
@@ -73,6 +136,18 @@ int main(int argc,char** argv)
   //
   HistoManager*  histo = new HistoManager();
 
+  // read config file if provided
+  //
+  char confName[255];
+  if(argc<3)
+    {
+      confName[0]='\0';
+    }
+  else
+    {
+      strcpy(confName,argv[2]);
+    }
+  ReadSettings(confName, histo);
 
   // Run manager
   //
