@@ -1,0 +1,532 @@
+//
+// ********************************************************************
+// * License and Disclaimer                                           *
+// *                                                                  *
+// * The  Geant4 software  is  copyright of the Copyright Holders  of *
+// * the Geant4 Collaboration.  It is provided  under  the terms  and *
+// * conditions of the Geant4 Software License,  included in the file *
+// * LICENSE and available at  http://cern.ch/geant4/license .  These *
+// * include a list of copyright holders.                             *
+// *                                                                  *
+// * Neither the authors of this software system, nor their employing *
+// * institutes,nor the agencies providing financial support for this *
+// * work  make  any representation or  warranty, express or implied, *
+// * regarding  this  software system or assume any liability for its *
+// * use.  Please see the license in the file  LICENSE  and URL above *
+// * for the full disclaimer and the limitation of liability.         *
+// *                                                                  *
+// * This  code  implementation is the result of  the  scientific and *
+// * technical work of the GEANT4 collaboration.                      *
+// * By using,  copying,  modifying or  distributing the software (or *
+// * any work based  on the software)  you  agree  to acknowledge its *
+// * use  in  resulting  scientific  publications,  and indicate your *
+// * acceptance of all terms of the Geant4 Software license.          *
+// ********************************************************************
+//
+//
+// $Id: pixelTBDetectorConstruction.cc,v 1.22 2010-01-22 11:57:03 maire Exp $
+// GEANT4 tag $Name: geant4-09-04-patch-02 $
+//
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo...... 
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+ 
+#include "pixelTBDetectorConstruction.hh"
+#include "pixelTBDetectorMessenger.hh"
+#include "pixelTBChamberParameterisation.hh"
+#include "pixelTBMagneticField.hh"
+#include "pixelTBTrackerSD.hh"
+
+#include "G4NistManager.hh"
+#include "G4Material.hh"
+#include "G4Box.hh"
+#include "G4LogicalVolume.hh"
+#include "G4PVPlacement.hh"
+#include "G4PVParameterised.hh"
+#include "G4SDManager.hh"
+#include "G4GeometryTolerance.hh"
+#include "G4GeometryManager.hh"
+
+#include "G4Transform3D.hh"
+#include "G4RotationMatrix.hh"
+
+#include "G4UserLimits.hh"
+
+#include "G4VisAttributes.hh"
+#include "G4Colour.hh"
+
+#include "G4ios.hh"
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+ 
+pixelTBDetectorConstruction::pixelTBDetectorConstruction()
+:solidWorld(0),  logicWorld(0),  physiWorld(0),
+ solidTarget(0), logicTarget(0), physiTarget(0),
+ solidTracker(0),
+ solidChamber(0), 
+ TargetMater(0), ChamberMater(0),chamberParam(0),
+ stepLimit(0), fpMagField(0),
+ fWorldLength(0.),  fTargetLength(0.), fTrackerLength(0.),
+ NbOfChambers(0) ,  ChamberWidth(0.),  ChamberSpacing(0.)
+{
+  fpMagField = new pixelTBMagneticField();
+  detectorMessenger = new pixelTBDetectorMessenger(this);
+   for(size_t ii=0; ii<8; ii++){
+     logicTracker[ii]=0;
+     physiTracker[ii]=0;
+     logicChamber[ii]=0;
+     physiChamber[ii]=0;
+   }
+
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+ 
+pixelTBDetectorConstruction::~pixelTBDetectorConstruction()
+{
+  delete fpMagField;
+  delete stepLimit;
+  delete chamberParam;
+  delete detectorMessenger;             
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+ 
+G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
+{
+//--------- Material definition ---------
+
+  G4NistManager* manager = G4NistManager::Instance();
+  manager->SetVerbose(0);
+
+  G4double a, z;
+  G4double density;
+  G4int nel;
+  G4int natoms;
+
+  //Elements
+  G4Element* H  = manager->FindOrBuildElement(1);
+  G4Element* C  = manager->FindOrBuildElement(6);
+  G4Element* N  = manager->FindOrBuildElement(7);
+  G4Element* O  = manager->FindOrBuildElement(8);
+  G4Element* Si = manager->FindOrBuildElement(14);
+
+  //Air
+  G4Material* Air = new G4Material("Air", density= 1.29*CLHEP::mg/CLHEP::cm3, nel=2);
+  Air->AddElement(N, 70*CLHEP::perCent);
+  Air->AddElement(O, 30*CLHEP::perCent);
+
+  //Air
+  G4Material* Vacuum = new G4Material("InterGalactic", 1, 1.008*CLHEP::g/CLHEP::mole, 1.e-25*CLHEP::g/CLHEP::cm3, kStateGas, 2.73*CLHEP::kelvin, 3.e-18*CLHEP::pascal);
+
+
+  //Silicon
+  G4Material* Silicon = 
+  new G4Material("Silicon", z=14., a=28.0855*CLHEP::g/CLHEP::mole, density=2.330*CLHEP::g/CLHEP::cm3);
+
+  //G10
+  G4Material* G10 = 
+  new G4Material("G10", density= 1.700*CLHEP::g/CLHEP::cm3, nel=4);
+  G10->AddElement(Si, natoms=1);
+  G10->AddElement(O , natoms=2);
+  G10->AddElement(C , natoms=3);
+  G10->AddElement(H , natoms=3);
+
+  //Aluminum
+  G4Material* Alu = 
+  new G4Material("Alu", z=13., a= 26.98*CLHEP::g/CLHEP::mole, density= 2.700*CLHEP::g/CLHEP::cm3);
+
+  // Print all the materials defined.
+  G4cout << G4endl << "The materials defined are : " << G4endl << G4endl;
+  G4cout << *(G4Material::GetMaterialTable()) << G4endl;
+
+
+
+//--------- Sizes of the principal geometrical components (solids)  ---------
+  
+  NbOfChambers = 52*80;
+  //ChamberSpacing = 12.91*CLHEP::mm;
+  ChamberSpacing = 16.0*CLHEP::mm;
+  ChamberWidth = 0.285*CLHEP::mm;
+  ChamberSize = 1.0*CLHEP::cm;
+
+  ROCSize     = 1.*CLHEP::cm;
+  ROCWidth     = 0.200*CLHEP::mm;
+  BoardWidth   = 1.2*CLHEP::mm;
+
+  G4double ChamberXShalfwidth = 0.05*CLHEP::mm;
+
+
+  fTrackerLength = (8+3)*ChamberSpacing; // Full length of Tracker
+  fTargetLength  = 5.0*CLHEP::cm;               // Full length of Target
+  
+  TargetMater  = Air;
+  ChamberMater = Silicon;
+  BoardMater   = G10;
+  
+  fWorldLength= 2.0*(fTargetLength+fTrackerLength);
+   
+  G4double targetSize  = 0.5*fTargetLength;    // Half length of the Target  
+  G4double trackerSize = 0.5*fTrackerLength;   // Half length of the Tracker
+
+  G4double WallThickness = 1.0*CLHEP::cm;
+  G4double WallWidth = 5.0*CLHEP::cm;
+  G4double WallHight = 5.0*CLHEP::cm;
+
+
+
+
+//--------- Definitions of Solids, Logical Volumes, Physical Volumes ---------
+  
+
+
+  //------------------------------ 
+  // World
+  //------------------------------ 
+
+  G4double HalfWorldLength = 0.5*fWorldLength;
+ 
+  G4GeometryManager::GetInstance()->SetWorldMaximumExtent(fWorldLength);
+  G4cout << "Computed tolerance = "
+         << G4GeometryTolerance::GetInstance()->GetSurfaceTolerance()/CLHEP::mm
+         << " CLHEP::mm" << G4endl;
+
+  solidWorld= new G4Box("world",HalfWorldLength,HalfWorldLength,HalfWorldLength);
+  logicWorld= new G4LogicalVolume( solidWorld, Air, "World", 0, 0, 0);
+  
+  //  Must place the World Physical volume unrotated at (0,0,0).
+  physiWorld = new G4PVPlacement(0,               // no rotation
+                                 G4ThreeVector(), // at (0,0,0)
+                                 logicWorld,      // its logical volume
+				 "World",         // its name
+                                 0,               // its mother volume
+                                 false,           // no boolean operations
+                                 0);              // copy number
+
+
+
+
+		 
+  //------------------------------ 
+  // Target
+  //------------------------------
+  
+  G4ThreeVector positionTarget = G4ThreeVector(0,0,-(targetSize+trackerSize));
+   
+  solidTarget = new G4Box("target",targetSize,targetSize,targetSize);
+  logicTarget = new G4LogicalVolume(solidTarget,TargetMater,"Target",0,0,0);
+  physiTarget = new G4PVPlacement(0,               // no rotation
+				  positionTarget,  // at (x,y,z)
+				  logicTarget,     // its logical volume				  
+				  "Target",        // its name
+				  logicWorld,      // its mother volume
+				  false,           // no boolean operations
+				  0);              // copy number 
+
+  G4cout << "Target is " << fTargetLength/CLHEP::cm << " cm of " 
+         << TargetMater->GetName() << G4endl;
+
+
+
+
+
+  //------------------------------ 
+  // Tracker (Pixels mother volumes)
+  //------------------------------
+  
+  G4ThreeVector positionTracker = G4ThreeVector(0,0,0);
+  G4RotationMatrix rotationTracker = G4RotationMatrix(0.,0.,0.);
+  G4double angle = 0.0;
+  angle = -20.0;
+  G4RotationMatrix *mirror_rot = new G4RotationMatrix(G4ThreeVector(1.5, 1.0, 0.0),angle*CLHEP::deg);
+  
+  solidTracker = new G4Box("tracker",0.5*ChamberSize, 0.5*ChamberSize, 0.5*ChamberWidth);
+
+  G4String trackerName[8];
+  trackerName[0] = "Tracker-0";
+  trackerName[1] = "Tracker-1";
+  trackerName[2] = "Tracker-2";
+  trackerName[3] = "Tracker-3";
+  trackerName[4] = "Tracker-4";
+  trackerName[5] = "Tracker-5";
+  trackerName[6] = "Tracker-6";
+  trackerName[7] = "Tracker-7";
+
+  G4ThreeVector posT[8];
+
+  for(size_t ii=0; ii<8; ii++) posT[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, ChamberSpacing*G4double(ii+1));
+  //for(size_t ii=4; ii<8; ii++) posT[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, ChamberSpacing*G4double(ii+2));
+
+  for(size_t ii=0; ii<8; ii++){
+
+    logicTracker[ii] = new G4LogicalVolume(solidTracker , Air, "Tracker",0,0,0);
+    physiTracker[ii] = new G4PVPlacement(mirror_rot,//0,              // no rotation
+					 posT[ii],           // at (x,y,z)
+					 logicTracker[ii],   // its logical volume				  
+					 trackerName[ii],    // its name
+					 logicWorld,         // its mother  volume
+					 false,              // no boolean operations
+					 ii);                // copy number 
+  }
+
+
+
+  //------------------------------ 
+  // Tracker segments
+  //------------------------------
+
+  
+  solidChamber = new G4Box("chamber", 0.5*ChamberSize, 0.5*ChamberSize, 0.5*ChamberWidth);
+
+  for(size_t ii=0; ii<8; ii++) logicChamber[ii] = new G4LogicalVolume(solidChamber,ChamberMater,"Chamber",0,0,0);
+  
+  G4double firstPosition = -trackerSize + 0.5*ChamberWidth;
+  G4double firstLength = ChamberXShalfwidth;
+  //G4double lastLength  = ChamberXShalfwidth;
+   
+			   
+  // dummy value : kZAxis -- modified by parameterised volume
+  //
+  chamberParam = new pixelTBChamberParameterisation(  
+		         NbOfChambers,          // NoChambers 
+			 firstPosition,         // Z of center of first 
+			 ChamberSpacing,        // Z spacing of centers
+			 ChamberWidth,          // Width Chamber 
+			 firstLength,           // lengthInitial 
+			 0);           // lengthFinal
+
+
+  for(size_t ii=0; ii<8; ii++){
+    physiChamber[ii] = new G4PVParameterised(
+			 "Chamber",       // their name
+			 logicChamber[ii],    // their logical volume
+			 logicTracker[ii],    // Mother logical volume
+			 kZAxis,          // Are placed along this axis 
+			 NbOfChambers,    // Number of chambers
+			 chamberParam);   // The parametrisation
+  }
+
+
+
+
+
+  G4cout << "There are " << NbOfChambers << " chambers in the tracker region. "
+         << "The chambers are " << ChamberWidth/CLHEP::mm << " mm of " 
+         << ChamberMater->GetName() << "\n The distance between chamber is "
+	 << ChamberSpacing/CLHEP::cm << " cm" << G4endl;
+
+
+
+  //------------------------------ 
+  // Mother volumes for ROC and board
+  //------------------------------
+
+
+  G4double BoardSize = 4.2*CLHEP::cm;
+
+  solidRandB = new G4Box("RandB",0.5*BoardSize, 0.5*BoardSize, 0.5*(BoardWidth+ROCWidth));
+
+  G4String RandBName[8];
+  RandBName[0] = "RandB-0";
+  RandBName[1] = "RandB-1";
+  RandBName[2] = "RandB-2";
+  RandBName[3] = "RandB-3";
+  RandBName[4] = "RandB-4";
+  RandBName[5] = "RandB-5";
+  RandBName[6] = "RandB-6";
+  RandBName[7] = "RandB-7";
+
+  G4ThreeVector posT2[8];
+
+  for(size_t ii=0; ii<8; ii++) posT2[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, ChamberSpacing*G4double(ii+1)+(0.5*(BoardWidth+ROCWidth+ChamberWidth)));
+  //for(size_t ii=4; ii<8; ii++) posT2[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, ChamberSpacing*G4double(ii+2)+(0.5*(BoardWidth+ROCWidth+ChamberWidth)));
+
+  for(size_t ii=0; ii<8; ii++){
+
+    logicRandB[ii] = new G4LogicalVolume(solidRandB , Air, "RandB",0,0,0);
+    physiRandB[ii] = new G4PVPlacement(mirror_rot,//0,              // no rotation
+					 posT2[ii],           // at (x,y,z)
+					 logicRandB[ii],   // its logical volume				  
+					 RandBName[ii],    // its name
+					 logicWorld,         // its mother  volume
+					 false,              // no boolean operations
+					 ii);                // copy number 
+  }
+
+
+
+  //------------------------------ 
+  // ROC
+  //------------------------------
+
+
+
+  solidROC = new G4Box("roc", 0.5*ROCSize, 0.5*ROCSize, 0.5*ROCWidth);
+
+  for(size_t ii=0; ii<8; ii++) logicROC[ii] = new G4LogicalVolume(solidROC,ChamberMater,"ROC",0,0,0);
+
+  G4String ROCName[8];
+  ROCName[0] = "ROC-0";
+  ROCName[1] = "ROC-1";
+  ROCName[2] = "ROC-2";
+  ROCName[3] = "ROC-3";
+  ROCName[4] = "ROC-4";
+  ROCName[5] = "ROC-5";
+  ROCName[6] = "ROC-6";
+  ROCName[7] = "ROC-7";
+
+
+  for(size_t ii=0; ii<8; ii++){
+    physiROC[ii] = new G4PVPlacement(0,//mirror_rot,//0,              // no rotation
+					 G4ThreeVector(0,0,-0.5*BoardWidth), // at (x,y,z)
+					 logicROC[ii],    // its logical volume				  
+					 ROCName[ii],       // its name
+					 logicRandB[ii],      // its mother  volume
+					 false,           // no boolean operations
+					 ii);              // copy number 
+  }
+
+
+
+  //------------------------------ 
+  // G10 Board
+  //------------------------------
+
+
+  solidBoard = new G4Box("board", 0.5*BoardSize, 0.5*BoardSize, 0.5*BoardWidth);
+
+  for(size_t ii=0; ii<8; ii++) logicBoard[ii] = new G4LogicalVolume(solidBoard,BoardMater,"Board",0,0,0);
+
+  G4String boardName[8];
+  boardName[0] = "Board-0";
+  boardName[1] = "Board-1";
+  boardName[2] = "Board-2";
+  boardName[3] = "Board-3";
+  boardName[4] = "Board-4";
+  boardName[5] = "Board-5";
+  boardName[6] = "Board-6";
+  boardName[7] = "Board-7";
+
+  for(size_t ii=0; ii<8; ii++){
+    physiBoard[ii] = new G4PVPlacement(0,//mirror_rot,//0,              // no rotation
+				       G4ThreeVector(0,0,0.5*ROCWidth), // at (x,y,z)
+				       logicBoard[ii],    // its logical volume				  
+				       boardName[ii],       // its name
+				       logicRandB[ii],      // its mother  volume
+				       false,           // no boolean operations
+				       ii);              // copy number 
+  }
+
+
+  //------------------------------ 
+  // G10 Board
+  //------------------------------
+
+  solidWall = new G4Box("wall",WallHight,WallWidth,WallThickness);
+  logicWall = new G4LogicalVolume(solidWall,Alu,"Wall",0,0,0);
+  physiWall = new G4PVPlacement(0,
+				G4ThreeVector(0,0,0),
+				logicWall,
+				"WALL",
+				logicWorld,
+				false,0);
+
+	 
+  //------------------------------------------------ 
+  // Sensitive detectors
+  //------------------------------------------------ 
+
+  G4SDManager* SDman = G4SDManager::GetSDMpointer();
+
+  G4String trackerChamberSDname = "pixelTB/TrackerChamberSD";
+  pixelTBTrackerSD* aTrackerSD = new pixelTBTrackerSD( trackerChamberSDname );
+  SDman->AddNewDetector( aTrackerSD );
+  for(size_t ii=0; ii<8; ii++) logicChamber[ii]->SetSensitiveDetector( aTrackerSD );
+
+
+
+
+//--------- Visualization attributes -------------------------------
+
+
+  G4VisAttributes* BoxVisAtt= new G4VisAttributes(G4Colour::White());
+  logicWorld  ->SetVisAttributes(BoxVisAtt);  
+  logicTarget ->SetVisAttributes(BoxVisAtt);
+  //for(size_t ii=0; ii<8; ii++)  logicTracker[ii]->SetVisAttributes(BoxVisAtt);
+  //for(size_t ii=0; ii<8; ii++)  logicRandB[ii]->SetVisAttributes(BoxVisAtt);
+  
+  G4VisAttributes* ChamberVisAtt = new G4VisAttributes(G4Colour::Yellow());
+  for(size_t ii=0; ii<8; ii++)    logicChamber[ii]->SetVisAttributes(ChamberVisAtt);
+
+  G4VisAttributes* ROCVisAtt = new G4VisAttributes(G4Colour::Yellow());
+  for(size_t ii=0; ii<8; ii++)    logicROC[ii]->SetVisAttributes(ROCVisAtt);
+
+  G4VisAttributes* BoardVisAtt = new G4VisAttributes(G4Colour::Green());
+  for(size_t ii=0; ii<8; ii++)    logicBoard[ii]->SetVisAttributes(BoardVisAtt);
+  
+
+//--------- example of User Limits -------------------------------
+
+  // below is an example of how to set tracking constraints in a given
+  // logical volume(see also in N02PhysicsList how to setup the processes
+  // G4StepLimiter or G4UserSpecialCuts).
+    
+  // Sets a max Step length in the tracker region, with G4StepLimiter
+  //
+
+  G4double maxStep = 0.5*ChamberWidth;
+  stepLimit = new G4UserLimits(maxStep);
+  for(size_t ii=0; ii<8; ii++)    logicTracker[ii]->SetUserLimits(stepLimit);
+  
+  // Set additional contraints on the track, with G4UserSpecialCuts
+  //
+  // G4double maxLength = 2*fTrackerLength, maxTime = 0.1*ns, minEkin = 10*MeV;
+  // logicTracker->SetUserLimits(new G4UserLimits(maxStep,maxLength,maxTime,
+  //                                               minEkin));
+  
+  return physiWorld;
+
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+ 
+void pixelTBDetectorConstruction::setTargetMaterial(G4String materialName)
+{
+  // search the material by its name 
+  G4Material* pttoMaterial = G4Material::GetMaterial(materialName);  
+  if (pttoMaterial)
+     {TargetMater = pttoMaterial;
+      logicTarget->SetMaterial(pttoMaterial); 
+      G4cout << "\n----> The target is " << fTargetLength/CLHEP::cm << " cm of "
+             << materialName << G4endl;
+     }             
+}
+ 
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void pixelTBDetectorConstruction::setChamberMaterial(G4String materialName)
+{
+  // search the material by its name 
+  G4Material* pttoMaterial = G4Material::GetMaterial(materialName);  
+  if (pttoMaterial)
+     {ChamberMater = pttoMaterial;
+       for(size_t ii=0; ii<8; ii++)  logicChamber[ii]->SetMaterial(pttoMaterial); 
+      G4cout << "\n----> The chambers are " << ChamberWidth/CLHEP::cm << " cm of "
+             << materialName << G4endl;
+     }             
+}
+ 
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+ 
+void pixelTBDetectorConstruction::SetMagField(G4double fieldValue)
+{
+  fpMagField->SetMagFieldValue(fieldValue);  
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void pixelTBDetectorConstruction::SetMaxStep(G4double maxStep)
+{
+  if ((stepLimit)&&(maxStep>0.)) stepLimit->SetMaxAllowedStep(maxStep);
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
