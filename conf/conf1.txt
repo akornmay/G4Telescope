@@ -1,0 +1,6 @@
+#SIMPLE CONFIGURATION FILE FOR G4TELESCOPE SIMULATION
+
+FIRST_TURN = 5             		   #First turn that will be loaded from the QIE file
+LAST_TURN = 4        			   #Last turn that will be loaded from the QIE file
+RUN = 179540         			   #RUN number to be simulated 
+QIE_DIR = QIEdata/rootfiles/		   #Where the QIE files are stored
