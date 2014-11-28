@@ -57,7 +57,7 @@ public:
   ~HistoManager();
   
   void book();
-  void open(G4String FileName);
+  void open();
   void save();
 
   void AddHit(pixelTBTrackerHit* Hit, G4int EventNumber, G4int &returnROC);
@@ -70,6 +70,12 @@ public:
 
   void SetFirstTurn(G4int first);
   G4int GetFirstTurn();
+
+  void SetRunNumber(G4int runNumber);
+  G4int GetRunNumber();
+
+  void SetQieDir(G4String qieDir);
+
 
 private:
 
@@ -91,6 +97,9 @@ private:
   G4int fBucket;
 
   G4int firstTurn;
+  G4int fRunNumber;
+  G4String fQieDir;
+
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

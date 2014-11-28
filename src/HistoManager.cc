@@ -65,7 +65,12 @@ void HistoManager::book()
  // Creating a tree container to handle histograms and ntuples.
  // This tree is associated to an output file.
  //
-  G4String fileName = "simdataTree_PixelTestBoard1_RUN179540.root";
+  G4String fileName = "simdataTree_PixelTestBoard1_RUN";
+  fileName.append(std::to_string(fRunNumber));
+  fileName.append("_TURNSTART");
+  fileName.append(std::to_string(firstTurn));
+  fileName.append(".root");
+
   fOutFileStraight = new TFile(fileName,"RECREATE");
   if(!fOutFileStraight) {
   G4cout << " HistoManager::book :" 
@@ -90,7 +95,14 @@ void HistoManager::book()
 
   G4cout << "Booked output file for straight telescope" << G4endl;
 
-  fileName = "simdataTree_PixelTestBoard2_RUN179540.root";
+  fileName = "simdataTree_PixelTestBoard2_RUN";
+  fileName.append(std::to_string(fRunNumber));
+  fileName.append("_TURNSTART");
+  fileName.append(std::to_string(firstTurn));
+  fileName.append(".root");
+
+
+
   fOutFileTilted = new TFile(fileName,"RECREATE");
   if(!fOutFileTilted) {
   G4cout << " HistoManager::book :" 
@@ -119,14 +131,26 @@ void HistoManager::book()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void HistoManager::open(G4String QIEFileName)
+void HistoManager::open()
 {
+  G4String QIEFileName = fQieDir + "RawData_spill";
+  QIEFileName.append(std::to_string(fRunNumber));
+  QIEFileName.append(".bin.root");
+  //check if file exists
+  //std::ifstream is(QIEFileName,std::ios::in);
+  std::istringstream is(QIEFileName.c_str());
+  if(!is)
+    {
+      G4cout << "Error: File \"" << QIEFileName << "\" doesn't exist."  << G4endl;
+    }
+
+
   G4cout << "Reading from ROOT tree file with the name: " << QIEFileName << G4endl; 
   //open the right root tree file
   G4cout << "Creating new TChain " << G4endl; 
   fChain = new TChain("tree_QIE");
   G4cout << "Adding file to chain" << G4endl; 
-  fChain->Add(QIEFileName);
+  fChain->Add(QIEFileName.c_str());
   //disable all branches
   G4cout << "Doing brach business " << G4endl; 
   fChain->SetBranchStatus("*",false);
@@ -261,3 +285,19 @@ void HistoManager::SetFirstTurn(G4int first)
   eventNr = firstTurn * 588;
 
 }
+
+G4int HistoManager::GetRunNumber()
+{
+  return fRunNumber;
+}
+
+void HistoManager::SetRunNumber(G4int runNumber)
+{
+  fRunNumber = runNumber;
+}
+
+void HistoManager::SetQieDir(G4String qieDir)
+{
+  fQieDir = qieDir;
+}
+

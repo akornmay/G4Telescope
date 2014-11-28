@@ -108,11 +108,19 @@ void ReadSettings(char* confFile, HistoManager* histo)
 	    {
 	      continue;
 	    }
+	  if(Parameter=="RUN")
+	    {
+	      histo->SetRunNumber(atol(Value.c_str()));
+	    }
+	  if(Parameter=="QIE_DIR")
+	    {
+	      histo->SetQieDir(Value.c_str());
+	    }
 	}
 
     }
 
-  G4cout << "RUNNING simulation from turn " << histo->GetFirstTurn() << G4endl;
+  G4cout << "RUNNING simulation for RUN " << histo->GetRunNumber() << " from turn " << histo->GetFirstTurn() << G4endl;
 
 }
 
