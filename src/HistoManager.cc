@@ -172,7 +172,8 @@ void HistoManager::GetNumbersOfParticlesInEvent(){
     {
       fBucket = 0; ++fTurn;
     }
-  NumberOfP = (int)((temp - BeamIntensity[32] +260.)/320.);
+  // NumberOfP = (int)((temp - BeamIntensity[32] +260.)/320.);
+  NumberOfP = (int)((temp - BeamIntensity[32] +260.)/320. + 0.5) * 10;
 
   TotalNumberOfParticles += NumberOfP;
   
