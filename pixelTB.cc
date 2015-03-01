@@ -116,6 +116,14 @@ void ReadSettings(char* confFile, HistoManager* histo)
 	    {
 	      histo->SetQieDir(Value.c_str());
 	    }
+	  if(Parameter=="TRANSPARENT_ONLY")
+	    {
+	      histo->SetTransparentMode((bool)(atoi(Value.c_str())));
+	    }
+	  if(Parameter=="TRIGGER_BUCKT")
+	    {
+	      histo->SetTriggerBucket(atol(Value.c_str()));
+	    }
 	}
 
     }

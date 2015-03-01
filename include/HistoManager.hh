@@ -76,6 +76,9 @@ public:
 
   void SetQieDir(G4String qieDir);
 
+  void SetTransparentMode(G4bool transparentMode){fTransparentMode = transparentMode;};
+  void SetTriggerBucket(G4int TRIGGER_BUCKET);
+  G4int GetTriggerBucket();
 
 private:
 
@@ -99,6 +102,9 @@ private:
   G4int firstTurn;
   G4int fRunNumber;
   G4String fQieDir;
+
+  G4bool fTransparentMode;
+  G4int fTriggerBucket;
 
 };
 

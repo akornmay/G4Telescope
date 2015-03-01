@@ -164,15 +164,27 @@ void HistoManager::open()
 void HistoManager::GetNumbersOfParticlesInEvent(){
 
   fChain->GetEntry(fTurn);
-  G4double  temp = BeamIntensity[fBucket];
-  //G4cout << "Evaluating Turn: " << fTurn << " Bucket: " << fBucket << " BeamIntensity: " << temp <<  G4endl;
-
-  ++fBucket;
-  if(fBucket >588)
+  G4double temp;
+  if(fTransparentMode)
     {
-      fBucket = 0; ++fTurn;
+      // when simulating the transparent mode we only need to simulate one bucket of every turn
+      
+      temp = BeamIntensity[fTriggerBucket];
+      ++fTurn;
     }
-  // NumberOfP = (int)((temp - BeamIntensity[32] +260.)/320.);
+  else
+    {
+      //when running in full simulation mode we need to simulate every bucket of a turn
+  
+      temp = BeamIntensity[fBucket];
+      //G4cout << "Evaluating Turn: " << fTurn << " Bucket: " << fBucket << " BeamIntensity: " << temp <<  G4endl;
+            ++fBucket;
+      if(fBucket >588)
+	{
+	  fBucket = 0; ++fTurn;
+	}
+    }
+      // NumberOfP = (int)((temp - BeamIntensity[32] +260.)/320.);
   NumberOfP = (int)((temp - BeamIntensity[32] +260.)/320. + 0.5) * 10;
 
   TotalNumberOfParticles += NumberOfP;
@@ -302,3 +314,19 @@ void HistoManager::SetQieDir(G4String qieDir)
   fQieDir = qieDir;
 }
 
+void HistoManager::SetTriggerBucket(G4int TRIGGER_BUCKET)
+{
+  fTriggerBucket = TRIGGER_BUCKET;
+
+  if(fTransparentMode &&  (fTriggerBucket < 0 || fTriggerBucket > 588))
+    {
+      G4cout << "The configuration points to a non-existend bucket number" << G4endl;
+      G4cout << "Ending simulation here " << G4endl;
+      exit(0);
+    }
+}
+
+G4int HistoManager::GetTriggerBucket()
+{
+  return fTriggerBucket;
+}

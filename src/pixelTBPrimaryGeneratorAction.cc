@@ -76,7 +76,7 @@ void pixelTBPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 { 
   //  G4int n_particle;
   //  n_particle = CLHEP::RandLandau::shoot();
-  //  n_particle = 1;
+  //n_particle = 2;
   n_particle = fHistoManager->NumberOfP;
   //G4cout << "xxn_particle is " << n_particle << G4endl;
 
@@ -85,27 +85,27 @@ void pixelTBPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   particleGun->SetParticlePosition(G4ThreeVector(0.*CLHEP::cm,0.*CLHEP::cm,position));
   
 
-  G4double x0 = -10.*CLHEP::mm; //-0.5*(Detector->GetWorldSizeX());
-  G4double y0 = -10.*CLHEP::mm;
+  G4double x0 = -1.*CLHEP::mm; //-0.5*(Detector->GetWorldSizeX());
+  G4double y0 = -1.*CLHEP::mm;
   G4double z0 = 0.*CLHEP::mm;
 
-//  x0 = CLHEP::cm*(G4UniformRand()-0.5);
-//  y0 = CLHEP::cm*(G4UniformRand()-0.5);
-//  while(x0 > 5. || x0 < -5.){
+  x0 = CLHEP::cm*(G4UniformRand()-0.5);
+  y0 = CLHEP::cm*(G4UniformRand()-0.5);
+  while(x0 > 5. || x0 < -5.){
     x0 = 2*CLHEP::mm*(G4RandGauss::shoot(-2.21,6.713));
-    //  }
-    //  while(y0 > 5. || y0 < -5.){
+  }
+  while(y0 > 5. || y0 < -5.){
     y0 = 2*CLHEP::mm*(G4RandGauss::shoot(0.19,5.851));
-    //  }
+  }
     particleGun->SetParticlePosition(G4ThreeVector(x0,y0,z0));
   //  particleGun->SetNumberOfParticles(4);
 
   G4double xdir = 0.;
   G4double ydir = 0.;
   
-  xdir = 0.01*(G4UniformRand()-0.5);
-  ydir = 0.01*(G4UniformRand()-0.5);
-  G4cout << " particle dir " << xdir << " / " << ydir << G4endl;
+  //  xdir = 0.01*(G4UniformRand()-0.5);
+  //ydir = 0.01*(G4UniformRand()-0.5);
+  //G4cout << " particle dir " << xdir << " / " << ydir << G4endl;
   particleGun->SetParticleMomentumDirection(G4ThreeVector(xdir, ydir, 1.));
  
   particleGun->GeneratePrimaryVertex(anEvent);
