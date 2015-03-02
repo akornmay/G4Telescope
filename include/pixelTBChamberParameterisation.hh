@@ -68,7 +68,9 @@ class pixelTBChamberParameterisation : public G4VPVParameterisation
                                  G4double spacing,
                                  G4double widthChamber, 
                                  G4double lengthInitial,
-                                 G4double lengthFinal );
+				   G4double lengthFinal,
+				   G4double CSZoneX,
+				   G4double CSZoneY );
 
     virtual				 
    ~pixelTBChamberParameterisation();
@@ -78,6 +80,7 @@ class pixelTBChamberParameterisation : public G4VPVParameterisation
     
     void ComputeDimensions (G4Box & trackerLayer, const G4int copyNo,
                             const G4VPhysicalVolume* physVol) const;
+
 
   private:  // Dummy declarations to get rid of warnings ...
 
@@ -100,6 +103,10 @@ class pixelTBChamberParameterisation : public G4VPVParameterisation
     G4double fSpacing;      //  The distance between the chambers' center
     G4double fHalfLengthFirst;  //  The first half-length 
     G4double fHalfLengthIncr;   //  The Increment for the half-length 
+    G4double fCSZonePercentageX;
+    G4double fCSZonePercentageY;
+
+
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

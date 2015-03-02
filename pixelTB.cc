@@ -124,6 +124,10 @@ void ReadSettings(char* confFile, HistoManager* histo)
 	    {
 	      histo->SetTriggerBucket(atol(Value.c_str()));
 	    }
+	  if(Parameter=="TRIGGER_BUCKT")
+	    {
+	      histo->SetTriggerBucket(atol(Value.c_str()));
+	    }
 	}
 
     }
@@ -152,6 +156,7 @@ int main(int argc,char** argv)
   //
   HistoManager*  histo = new HistoManager();
 
+  
   // read config file if provided
   //
   char confName[255];
@@ -165,6 +170,7 @@ int main(int argc,char** argv)
     }
   ReadSettings(confName, histo);
 
+  //
   // Run manager
   //
   G4RunManager * runManager = new G4RunManager;

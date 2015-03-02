@@ -165,7 +165,8 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
 
 //--------- Sizes of the principal geometrical components (solids)  ---------
   
-  NbOfChambers = 52*80;
+//  NbOfChambers = 52*80;
+  NbOfChambers = 52*80*9;
   //ChamberSpacing = 12.91*CLHEP::mm;
   ChamberSpacing = 16.0*CLHEP::mm;
   ChamberWidth = 0.285*CLHEP::mm;
@@ -380,7 +381,8 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
   G4double firstPosition = -trackerSize + 0.5*ChamberWidth;
   G4double firstLength = ChamberXShalfwidth;
   //G4double lastLength  = ChamberXShalfwidth;
-   
+  fCSZonePercentageX = 0.2;
+  fCSZonePercentageY = 0.2;
 			   
   // dummy value : kZAxis -- modified by parameterised volume
   //
@@ -390,7 +392,9 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
 			 ChamberSpacing,        // Z spacing of centers
 			 ChamberWidth,          // Width Chamber 
 			 firstLength,           // lengthInitial 
-			 0);           // lengthFinal
+			 0,                     // lengthFinal
+			 fCSZonePercentageX,
+			 fCSZonePercentageY);          
 
 
   for(size_t ii=0; ii<16; ii++){
@@ -751,6 +755,7 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
   logicInsulation->SetVisAttributes(InsulationVisAtt);
 
   G4VisAttributes* ChamberVisAtt = new G4VisAttributes(G4Colour::Yellow());
+  ChamberVisAtt->SetForceWireframe(true);
   for(size_t ii=0; ii<16; ii++)    logicChamber[ii]->SetVisAttributes(ChamberVisAtt);
 
   G4VisAttributes* ROCVisAtt = new G4VisAttributes(G4Colour::Yellow());
@@ -760,6 +765,7 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
   for(size_t ii=0; ii<16; ii++)    logicBoard[ii]->SetVisAttributes(BoardVisAtt);
 
   G4VisAttributes* CapVisAtt = new G4VisAttributes(G4Colour::Magenta());
+  CapVisAtt->SetForceWireframe(true);
   for(size_t ii=0; ii<16; ii++)    logicCap[ii]->SetVisAttributes(CapVisAtt);
   
   G4VisAttributes* AluVisAtt = new G4VisAttributes(G4Colour::Cyan());

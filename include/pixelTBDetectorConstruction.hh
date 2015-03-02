@@ -70,7 +70,12 @@ class pixelTBDetectorConstruction : public G4VUserDetectorConstruction
      void setChamberMaterial(G4String);
      void SetMagField(G4double);
      void SetMaxStep (G4double);     
-     
+  
+     G4double fCSZonePercentageX;
+     G4double fCSZonePercentageY;
+
+
+
   private:
 
      G4Box*             solidWorld;    // pointer to the solid envelope 
