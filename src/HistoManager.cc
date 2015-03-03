@@ -254,7 +254,7 @@ void HistoManager::AddHit(pixelTBTrackerHit* Hit,G4int EventNumber, G4int &retur
 }
 
 
-void HistoManager::AddHits(G4double pixelArray[16][52][80], G4int EventNumber, G4int &returnROC)
+void HistoManager::AddHits(G4double pixelArray[16][52][80], G4int EventNumber)
 {
 
 

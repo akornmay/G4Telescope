@@ -64,7 +64,7 @@ public:
   void AddEmptyEvent(G4int EventNumber, G4int PixelTestBoard);
 
   void CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, G4double pixArray[16][52][80]);
-  void AddHits(G4double pixelArray[16][52][80], G4int EventNumber, G4int &returnROC);
+  void AddHits(G4double pixelArray[16][52][80], G4int EventNumber);
 
 
   void GetNumbersOfParticlesInEvent();

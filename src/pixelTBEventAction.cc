@@ -110,25 +110,16 @@ void pixelTBEventAction::EndOfEventAction(const G4Event* evt)
 
       if(NbHits != 0)
 	{
-	  G4int returnROC = -999;
-	  G4int maxROC = -1;
-	  G4int minROC = 17;
-	  for (G4int i=0;i<NbHits;i++) 
+
+	  //initialize a empty array
+	  G4double pixelArray[16][52][80] = {{{0}}};
+
+	  for(G4int i = 0; i < NbHits; i++)
 	    {
-	      fHistManager->AddHit((*trackerCollection)[i],evt->GetEventID(), returnROC);
-	      G4cout << "ReturnROC is: " << returnROC << G4endl;
-	      if(returnROC > maxROC)
-		{
-		  maxROC = returnROC;
-		}
-	      if(returnROC < minROC)
-		{
-		  minROC = returnROC;
-		}
+	      fHistManager->CollectHits((*trackerCollection)[i], evt->GetEventID(),pixelArray);
 	    }
-	  
-	  if(minROC > 7) fHistManager->AddEmptyEvent(evt->GetEventID(),2);  //we have an empty event in testboard2/tilted telescope
-	  if(maxROC < 8) fHistManager->AddEmptyEvent(evt->GetEventID(),1);  //we have an empty event in testboard1/straight telescope
+
+	  fHistManager->AddHits(pixelArray, evt->GetEventID());
 
 	}
 
