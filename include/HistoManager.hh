@@ -63,6 +63,9 @@ public:
   void AddHit(pixelTBTrackerHit* Hit, G4int EventNumber, G4int &returnROC);
   void AddEmptyEvent(G4int EventNumber, G4int PixelTestBoard);
 
+  void CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, G4double pixArray[16][52][80]);
+
+
   void GetNumbersOfParticlesInEvent();
  
   G4int NumberOfP;
