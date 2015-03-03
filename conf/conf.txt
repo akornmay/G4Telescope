@@ -4,3 +4,7 @@ FIRST_TURN = 55555             		   #First turn that will be loaded from the QIE
 LAST_TURN = 4        			   #Last turn that will be loaded from the QIE file
 RUN = 179540         			   #RUN number to be simulated 
 QIE_DIR = QIEdata/rootfiles/		   #Where the QIE files are stored
+
+BEAMINTENSITY_PARAM1 = 260.		   
+BEAMINTENSITY_PARAM2 = 320.		   
+BEAMINTENSITY_SCALING = 10.		   

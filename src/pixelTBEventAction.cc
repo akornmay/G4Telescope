@@ -81,8 +81,8 @@ void pixelTBEventAction::EndOfEventAction(const G4Event* evt)
   if (event_id < 100 || event_id%100 == 0) 
     {
      G4cout << ">>> Event " << evt->GetEventID() << G4endl;
-     G4cout << "    " << n_trajectories 
-	   << " trajectories stored in this event." << G4endl;
+     //     G4cout << "    " << n_trajectories 
+     //	   << " trajectories stored in this event." << G4endl;
     }
 
   G4int HCID = G4SDManager::GetSDMpointer()->GetCollectionID("trackerCollection"); 
@@ -116,7 +116,7 @@ void pixelTBEventAction::EndOfEventAction(const G4Event* evt)
 	  for (G4int i=0;i<NbHits;i++) 
 	    {
 	      fHistManager->AddHit((*trackerCollection)[i],evt->GetEventID(), returnROC);
-	      G4cout << "ReturnROC is: " << returnROC << G4endl;
+	      //	      G4cout << "ReturnROC is: " << returnROC << G4endl;
 	      if(returnROC > maxROC)
 		{
 		  maxROC = returnROC;

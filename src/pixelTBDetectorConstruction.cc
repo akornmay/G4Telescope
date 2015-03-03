@@ -595,7 +595,7 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
 
   for(size_t ii=0; ii<8; ii++){
 
-    logicCap[ii] = new G4LogicalVolume(cap , Air, "Cap",0,0,0);
+    logicCap[ii] = new G4LogicalVolume(cap , PVC, "Cap",0,0,0);
     physiCap[ii] = new G4PVPlacement(mirror_rot,              // rotated
 				     posT3[ii],           // at (x,y,z)
 				     logicCap[ii],   // its logical volume				  
@@ -607,7 +607,7 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
 
   for(size_t ii=8; ii<16; ii++){
 
-    logicCap[ii] = new G4LogicalVolume(cap , Air, "Cap",0,0,0);
+    logicCap[ii] = new G4LogicalVolume(cap , PVC, "Cap",0,0,0);
     physiCap[ii] = new G4PVPlacement(0,              // no rotation
 				     posT3[ii],           // at (x,y,z)
 				     logicCap[ii],   // its logical volume				  

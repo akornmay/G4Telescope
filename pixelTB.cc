@@ -116,6 +116,10 @@ void ReadSettings(char* confFile, HistoManager* histo)
 	    {
 	      histo->SetQieDir(Value.c_str());
 	    }
+	  if(Parameter=="BEAMINTENSITY_PARAM1")
+	    {
+	      histo->BEAMINTENSITY_PARAM1(Value.c_str());
+	    }
 	}
 
     }

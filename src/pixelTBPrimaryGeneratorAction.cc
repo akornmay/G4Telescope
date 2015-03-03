@@ -105,7 +105,7 @@ void pixelTBPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   
   xdir = 0.01*(G4UniformRand()-0.5);
   ydir = 0.01*(G4UniformRand()-0.5);
-  G4cout << " particle dir " << xdir << " / " << ydir << G4endl;
+  //  G4cout << " particle dir " << xdir << " / " << ydir << G4endl;
   particleGun->SetParticleMomentumDirection(G4ThreeVector(xdir, ydir, 1.));
  
   particleGun->GeneratePrimaryVertex(anEvent);

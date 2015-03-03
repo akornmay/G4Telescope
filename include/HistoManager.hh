@@ -76,6 +76,10 @@ public:
 
   void SetQieDir(G4String qieDir);
 
+  double BEAMINTENSITY_PARAM1;		   
+  double BEAMINTENSITY_PARAM2;		   
+  double BEAMINTENSITY_SCALING;		   
+
 
 private:
 

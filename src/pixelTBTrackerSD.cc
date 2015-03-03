@@ -90,8 +90,8 @@ void pixelTBTrackerSD::EndOfEvent(G4HCofThisEvent*)
 {
   if (verboseLevel>0) { 
      G4int NbHits = trackerCollection->entries();
-     G4cout << "\n-------->Hits Collection: in this event they are " << NbHits 
-            << " hits in the tracker chambers: " << G4endl;
+     //     G4cout << "\n-------->Hits Collection: in this event they are " << NbHits 
+     //       << " hits in the tracker chambers: " << G4endl;
      for (G4int i=0;i<NbHits;i++) (*trackerCollection)[i]->Print();
     } 
 }
