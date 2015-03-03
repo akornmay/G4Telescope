@@ -118,15 +118,15 @@ void ReadSettings(char* confFile, HistoManager* histo)
 	    }
 	  if(Parameter=="BEAMINTENSITY_PARAM1")
 	    {
-	      histo->BEAMINTENSITY_PARAM1(Value.c_str());
+	      histo->BEAMINTENSITY_PARAM1 = atof(Value.c_str());
 	    }
 	  if(Parameter=="BEAMINTENSITY_PARAM2")
 	    {
-	      histo->BEAMINTENSITY_PARAM2(Value.c_str());
+	      histo->BEAMINTENSITY_PARAM2 = atof(Value.c_str());
 	    }
 	  if(Parameter=="BEAMINTENSITY_SCALING")
 	    {
-	      histo->BEAMINTENSITY_SCALING(Value.c_str());
+	      histo->BEAMINTENSITY_SCALING = atof(Value.c_str());
 	    }
 	  if(Parameter=="TRANSPARENT_ONLY")
 	    {
