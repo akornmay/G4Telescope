@@ -254,6 +254,57 @@ void HistoManager::AddHit(pixelTBTrackerHit* Hit,G4int EventNumber, G4int &retur
 }
 
 
+void HistoManager::AddHits(G4double pixelArray[16][52][80], G4int EventNumber, G4int &returnROC)
+{
+
+
+  G4int minRoc = 16;
+  G4int maxRoc = -1;
+  //loop over all pixels
+  for(roc = 0; roc < 16; ++roc)
+    {
+
+      for(col = 0; col < 52; ++col)
+	{
+
+	  for(row = 0; row < 80; ++row)
+	    {
+
+	      if(pixelArray[roc][col][row] != 0)
+		{
+		  energy = pixelArray[roc][col][row];
+		  vcal = (int)(energy / 3.62 * 1000.0 - (-600.0)) / 50.0;
+		  pulseHeight = (+1.520615e+02) + (+1.036756e+02) * TMath::TanH((+3.122759e-03)*vcal - (+1.085111e+00)) ;
+		  x=0;
+		  y=0;
+		  eventNr = EventNumber;
+
+		  if(roc < 8)
+		    {
+		      fTreeTilted->Fill();
+		      if(roc < minRoc) minRoc = roc;
+		      if(roc > maxRoc) maxRoc = roc;
+		    }
+		  else
+		    {
+		      fTreeStraight->Fill();
+		      if(roc < minRoc) minRoc = roc;
+		      if(roc > maxRoc) maxRoc = roc;
+		    }
+
+		}
+	    }
+	}
+    }
+
+  //
+  if(minRoc > 7) AddEmptyEvent(EventNumber,2);  //we have an empty event in testboard2/tilted telescope
+  if(maxRoc < 8) AddEmptyEvent(EventNumber,1);  //we have an empty event in testboard1/straight telescope 
+
+}
+
+
+
 void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber,G4double pixelArray[16][52][80])
 {
   // let's manipulate all the pixels in the array that are hit
