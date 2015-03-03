@@ -93,8 +93,7 @@ pixelTBDetectorConstruction::~pixelTBDetectorConstruction()
  
 G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
 {
-//--------- Material definition ---------
-
+ //--------- Material definition ---------
   G4NistManager* manager = G4NistManager::Instance();
   manager->SetVerbose(0);
 

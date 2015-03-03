@@ -73,7 +73,7 @@ pixelTBPrimaryGeneratorAction::~pixelTBPrimaryGeneratorAction()
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void pixelTBPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
-{ 
+{
   //  G4int n_particle;
   //  n_particle = CLHEP::RandLandau::shoot();
   //n_particle = 2;
@@ -110,6 +110,8 @@ void pixelTBPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
  
   particleGun->GeneratePrimaryVertex(anEvent);
   }
+  G4cout << "Done" << G4endl;
+
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

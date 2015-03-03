@@ -162,7 +162,6 @@ void HistoManager::open()
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void HistoManager::GetNumbersOfParticlesInEvent(){
-
   fChain->GetEntry(fTurn);
   G4double temp;
   if(fTransparentMode)
@@ -170,6 +169,7 @@ void HistoManager::GetNumbersOfParticlesInEvent(){
       // when simulating the transparent mode we only need to simulate one bucket of every turn
       
       temp = BeamIntensity[fTriggerBucket];
+      //  G4cout << "in Turn " << fTurn << " BeamIntensity[" << fTriggerBucket << "]=" << temp << G4endl;
       ++fTurn;
     }
   else
@@ -185,11 +185,11 @@ void HistoManager::GetNumbersOfParticlesInEvent(){
 	}
     }
       // NumberOfP = (int)((temp - BeamIntensity[32] +260.)/320.);
-  NumberOfP = (int)((temp - BeamIntensity[32] +260.)/320. + 0.5) * 10;
+  NumberOfP = (int)(((temp - BeamIntensity[32] + BEAMINTENSITY_PARAM1)/BEAMINTENSITY_PARAM2) * BEAMINTENSITY_SCALING);
 
   TotalNumberOfParticles += NumberOfP;
   
-  // G4cout << "number of particles " <<  NumberOfP << G4endl;
+  //  G4cout << "number of particles " <<  NumberOfP << G4endl;
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

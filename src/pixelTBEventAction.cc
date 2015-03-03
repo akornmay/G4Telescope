@@ -61,7 +61,6 @@ pixelTBEventAction::~pixelTBEventAction()
 void pixelTBEventAction::BeginOfEventAction(const G4Event*)
 {
   fHistManager->GetNumbersOfParticlesInEvent();
-
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -110,7 +109,6 @@ void pixelTBEventAction::EndOfEventAction(const G4Event* evt)
 
       if(NbHits != 0)
 	{
-
 	  //initialize a empty array
 	  G4double pixelArray[16][52][80] = {{{0}}};
 
@@ -120,7 +118,6 @@ void pixelTBEventAction::EndOfEventAction(const G4Event* evt)
 	    }
 
 	  fHistManager->AddHits(pixelArray, evt->GetEventID());
-
 	}
 
     }
