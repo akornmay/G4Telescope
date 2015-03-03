@@ -63,6 +63,10 @@ public:
   void AddHit(pixelTBTrackerHit* Hit, G4int EventNumber, G4int &returnROC);
   void AddEmptyEvent(G4int EventNumber, G4int PixelTestBoard);
 
+  void CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, G4double pixArray[16][52][80]);
+  void AddHits(G4double pixelArray[16][52][80], G4int EventNumber);
+
+
   void GetNumbersOfParticlesInEvent();
  
   G4int NumberOfP;
@@ -76,10 +80,14 @@ public:
 
   void SetQieDir(G4String qieDir);
 
+
   double BEAMINTENSITY_PARAM1;		   
   double BEAMINTENSITY_PARAM2;		   
   double BEAMINTENSITY_SCALING;		   
 
+  void SetTransparentMode(G4bool transparentMode){fTransparentMode = transparentMode;};
+  void SetTriggerBucket(G4int TRIGGER_BUCKET);
+  G4int GetTriggerBucket();
 
 private:
 
@@ -103,6 +111,9 @@ private:
   G4int firstTurn;
   G4int fRunNumber;
   G4String fQieDir;
+
+  G4bool fTransparentMode;
+  G4int fTriggerBucket;
 
 };
 

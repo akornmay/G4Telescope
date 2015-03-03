@@ -164,15 +164,27 @@ void HistoManager::open()
 void HistoManager::GetNumbersOfParticlesInEvent(){
 
   fChain->GetEntry(fTurn);
-  G4double  temp = BeamIntensity[fBucket];
-  //G4cout << "Evaluating Turn: " << fTurn << " Bucket: " << fBucket << " BeamIntensity: " << temp <<  G4endl;
-
-  ++fBucket;
-  if(fBucket >588)
+  G4double temp;
+  if(fTransparentMode)
     {
-      fBucket = 0; ++fTurn;
+      // when simulating the transparent mode we only need to simulate one bucket of every turn
+      
+      temp = BeamIntensity[fTriggerBucket];
+      ++fTurn;
     }
-  // NumberOfP = (int)((temp - BeamIntensity[32] +260.)/320.);
+  else
+    {
+      //when running in full simulation mode we need to simulate every bucket of a turn
+  
+      temp = BeamIntensity[fBucket];
+      //G4cout << "Evaluating Turn: " << fTurn << " Bucket: " << fBucket << " BeamIntensity: " << temp <<  G4endl;
+            ++fBucket;
+      if(fBucket >588)
+	{
+	  fBucket = 0; ++fTurn;
+	}
+    }
+      // NumberOfP = (int)((temp - BeamIntensity[32] +260.)/320.);
   NumberOfP = (int)((temp - BeamIntensity[32] +260.)/320. + 0.5) * 10;
 
   TotalNumberOfParticles += NumberOfP;
@@ -242,6 +254,296 @@ void HistoManager::AddHit(pixelTBTrackerHit* Hit,G4int EventNumber, G4int &retur
 }
 
 
+void HistoManager::AddHits(G4double pixelArray[16][52][80], G4int EventNumber)
+{
+
+
+  G4int minRoc = 16;
+  G4int maxRoc = -1;
+  //loop over all pixels
+  for(roc = 0; roc < 16; ++roc)
+    {
+
+      for(col = 0; col < 52; ++col)
+	{
+
+	  for(row = 0; row < 80; ++row)
+	    {
+
+	      if(pixelArray[roc][col][row] != 0)
+		{
+		  energy = pixelArray[roc][col][row];
+		  vcal = (int)(energy / 3.62 * 1000.0 - (-600.0)) / 50.0;
+		  pulseHeight = (+1.520615e+02) + (+1.036756e+02) * TMath::TanH((+3.122759e-03)*vcal - (+1.085111e+00)) ;
+		  x=0;
+		  y=0;
+		  eventNr = EventNumber;
+
+		  if(roc < 8)
+		    {
+		      fTreeTilted->Fill();
+		      if(roc < minRoc) minRoc = roc;
+		      if(roc > maxRoc) maxRoc = roc;
+		    }
+		  else
+		    {
+		      fTreeStraight->Fill();
+		      if(roc < minRoc) minRoc = roc;
+		      if(roc > maxRoc) maxRoc = roc;
+		    }
+
+		}
+	    }
+	}
+    }
+
+  //
+  if(minRoc > 7) AddEmptyEvent(EventNumber,2);  //we have an empty event in testboard2/tilted telescope
+  if(maxRoc < 8) AddEmptyEvent(EventNumber,1);  //we have an empty event in testboard1/straight telescope 
+
+}
+
+
+
+void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber,G4double pixelArray[16][52][80])
+{
+  // let's manipulate all the pixels in the array that are hit
+  // I assume that the array has been initialized to be all 0
+
+  // we need the number of the chamber that was hit
+
+  G4int chamberNo = Hit->GetChamberNb();
+  const G4int nCol = 52 * 3;
+  //const G4int nRow = 80 * 3;
+  //const G4int npixel = nCol * nRow;
+
+ G4ThreeVector pos = Hit->GetPos();
+ G4int ROC = (int)(pos.getZ()/16.0 +0.5) - 11;
+ G4int Col = (chamberNo%nCol)/3;
+ G4int Row = (chamberNo/nCol)/3;
+
+ G4double CSFraction = 0.20;
+
+
+ if((chamberNo%nCol)%3 == 0) // this gives the COL
+   {
+     if((chamberNo/nCol)%3 == 1) // this gives the ROW
+       {
+	 //this is a left-center hit, we share charge to the pixel on the left
+	 if(Col != 0)
+	   {
+	     pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+	     pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
+	   }
+	 else
+	   {
+	     pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	   }
+
+       }
+     if((chamberNo/nCol)%3 == 0) // this gives the ROW
+       {
+	 //this is a left-bottom hit, we have to share some charge to the neigboring pixels
+	 if(Col != 0 && Row != 0)
+	   {
+	     pixelArray[ROC][Col][Row] += (1-1.5*CSFraction)*Hit->GetEdep();
+	     pixelArray[ROC][Col-1][Row-1] += 0.5*CSFraction*Hit->GetEdep();
+	     pixelArray[ROC][Col-1][Row] += 0.5*CSFraction*Hit->GetEdep();
+	     pixelArray[ROC][Col][Row-1] += 0.5*CSFraction*Hit->GetEdep();
+	   }
+	 else
+	   {
+	     if(Col == 0 && Row != 0)
+	       {
+		 pixelArray[ROC][Col][Row] += (1-0.5*CSFraction)*Hit->GetEdep();
+		 pixelArray[ROC][Col][Row-1] += 0.5*CSFraction*Hit->GetEdep();
+	       }
+	     else if(Col != 0 && Row == 0)
+	       {
+		 pixelArray[ROC][Col][Row] += (1-0.5*CSFraction)*Hit->GetEdep();
+		 pixelArray[ROC][Col-1][Row] += 0.5*CSFraction*Hit->GetEdep();
+	       }
+	     else
+	       {
+		 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	       }
+	   }
+       }
+
+     if((chamberNo/nCol)%3 == 2) // this gives the ROW
+       {
+	 //this is a left-top hit, we have to share some charge to the neighboring pixel
+	 if(Col != 0 && Row != 79)
+	   {
+	     pixelArray[ROC][Col][Row] += (1-1.5*CSFraction)*Hit->GetEdep();
+	     pixelArray[ROC][Col-1][Row+1] += 0.5*CSFraction*Hit->GetEdep();
+	     pixelArray[ROC][Col-1][Row] += 0.5*CSFraction*Hit->GetEdep();
+	     pixelArray[ROC][Col][Row+1] += 0.5*CSFraction*Hit->GetEdep();
+	   }
+	 else
+	   {
+	     if(Col == 0 && Row != 79)
+	       {
+		 pixelArray[ROC][Col][Row] += (1-0.5*CSFraction)*Hit->GetEdep();
+		 pixelArray[ROC][Col][Row+1] += 0.5*CSFraction*Hit->GetEdep();
+	       }
+	     else if(Col != 0 && Row == 79)
+	       {
+		 pixelArray[ROC][Col][Row] += (1-0.5*CSFraction)*Hit->GetEdep();
+		 pixelArray[ROC][Col-1][Row] += 0.5*CSFraction*Hit->GetEdep();
+	       }
+	     else
+	       {
+		 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	       }
+	   }
+       }
+   }
+
+
+
+ if((chamberNo%nCol)%3 == 1) // this gives the COL
+   {
+     if((chamberNo/nCol)%3 == 1) // this gives the ROW
+       {
+	 //this is a center hit, all the charge stays in one pixel
+	 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+       }
+     if((chamberNo/nCol)%3 == 0) // this gives the ROW
+       {
+	 //this is a bottom hit, we have to share some charge to the pixel underneath
+	 if(Row != 0)
+	   {
+	     pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+	     pixelArray[ROC][Col][Row - 1] += CSFraction*Hit->GetEdep();
+	   }
+	 else
+	   {
+	     pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	   }
+       }
+     if((chamberNo/nCol)%3 == 2) // this gives the ROW
+       {
+	 //this is a top hit, we have to share some charge to the pixel above
+	 if(Row != 79)
+	   {
+	     pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+	     pixelArray[ROC][Col][Row + 1] += CSFraction*Hit->GetEdep();
+	   }
+	 else
+	   {
+	     pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	   }
+       }
+   }
+
+
+ if((chamberNo%nCol)%3 == 2) // this gives the COL
+   {
+     if((chamberNo/nCol)%3 == 1) // this gives the ROW
+       {
+	 //this is a right-center hit, we share charge to the pixel on the right
+	 if(Col != 51)
+	   {
+	     pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+	     pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
+	   }
+	 else
+	   {
+	     pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	   }
+
+       }
+     if((chamberNo/nCol)%3 == 0) // this gives the ROW
+       {
+	 //this is a right-top hit, we have to share some charge to the neigboring pixels
+	 if(Col != 51 && Row != 79)
+	   {
+	     pixelArray[ROC][Col][Row] += (1-1.5*CSFraction)*Hit->GetEdep();
+	     pixelArray[ROC][Col+1][Row+1] += 0.5*CSFraction*Hit->GetEdep();
+	     pixelArray[ROC][Col+1][Row] += 0.5*CSFraction*Hit->GetEdep();
+	     pixelArray[ROC][Col][Row+1] += 0.5*CSFraction*Hit->GetEdep();
+	   }
+	 else
+	   {
+	     if(Col == 51 && Row != 79)
+	       {
+		 pixelArray[ROC][Col][Row] += (1-0.5*CSFraction)*Hit->GetEdep();
+		 pixelArray[ROC][Col][Row+1] += 0.5*CSFraction*Hit->GetEdep();
+	       }
+	     else if(Col != 51 && Row == 79)
+	       {
+		 pixelArray[ROC][Col][Row] += (1-0.5*CSFraction)*Hit->GetEdep();
+		 pixelArray[ROC][Col+1][Row] += 0.5*CSFraction*Hit->GetEdep();
+	       }
+	     else
+	       {
+		 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	       }
+	   }
+       }
+
+     if((chamberNo/nCol)%3 == 2) // this gives the ROW
+       {
+	 //this is a right-bottom hit, we have to share some charge to the neighboring pixel
+	 if(Col != 51 && Row != 0)
+	   {
+	     pixelArray[ROC][Col][Row] += (1-1.5*CSFraction)*Hit->GetEdep();
+	     pixelArray[ROC][Col+1][Row-1] += 0.5*CSFraction*Hit->GetEdep();
+	     pixelArray[ROC][Col+1][Row] += 0.5*CSFraction*Hit->GetEdep();
+	     pixelArray[ROC][Col][Row-1] += 0.5*CSFraction*Hit->GetEdep();
+	   }
+	 else
+	   {
+	     if(Col == 51 && Row != 0)
+	       {
+		 pixelArray[ROC][Col][Row] += (1-0.5*CSFraction)*Hit->GetEdep();
+		 pixelArray[ROC][Col][Row-1] += 0.5*CSFraction*Hit->GetEdep();
+	       }
+	     else if(Col != 51 && Row == 0)
+	       {
+		 pixelArray[ROC][Col][Row] += (1-0.5*CSFraction)*Hit->GetEdep();
+		 pixelArray[ROC][Col+1][Row] += 0.5*CSFraction*Hit->GetEdep();
+	       }
+	     else
+	       {
+		 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	       }
+	   }
+       }
+   }
+
+/*
+
+ -----------------------------------
+|      |                     |      |
+|  02  |                     |      |
+|      |                     |      |
+ -----------------------------------
+|      |                     |      |
+|      |                     |      |
+|      |                     |      |
+|      |                     |      |
+|  01  |                     |      |
+|      |                     |      |
+|      |                     |      |
+|      |                     |      |
+ -----------------------------------
+|      |                     |      |
+|  00  |         10          |  20  |
+|      |                     |      |
+ -----------------------------------
+ 
+
+ */
+
+
+
+
+}
+
+
+
 void HistoManager::AddEmptyEvent(G4int EventNumber, G4int PixelTestBoard)
 {
 
@@ -301,4 +603,22 @@ void HistoManager::SetQieDir(G4String qieDir)
 {
   fQieDir = qieDir;
 }
+
+void HistoManager::SetTriggerBucket(G4int TRIGGER_BUCKET)
+{
+  fTriggerBucket = TRIGGER_BUCKET;
+
+  if(fTransparentMode &&  (fTriggerBucket < 0 || fTriggerBucket > 588))
+    {
+      G4cout << "The configuration points to a non-existend bucket number" << G4endl;
+      G4cout << "Ending simulation here " << G4endl;
+      exit(0);
+    }
+}
+
+G4int HistoManager::GetTriggerBucket()
+{
+  return fTriggerBucket;
+}
+
 
