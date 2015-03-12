@@ -89,9 +89,9 @@ void HistoManager::book()
   fTreeStraight->Branch("vcal", &vcal, "vcal/I");
   fTreeStraight->Branch("col", &col, "col/I");
   fTreeStraight->Branch("row", &row, "row/I");
-  fTreeStraight->Branch("flux", &flux, "flux/F");
-  fTreeStraight->Branch("x", &x, "x/F");
-  fTreeStraight->Branch("y", &y, "y/F");
+  fTreeStraight->Branch("flux", &flux, "flux/D");
+  fTreeStraight->Branch("x", &x, "x/D");
+  fTreeStraight->Branch("y", &y, "y/D");
 
   G4cout << "Booked output file for straight telescope" << G4endl;
 
@@ -121,9 +121,9 @@ void HistoManager::book()
   fTreeTilted->Branch("vcal", &vcal, "vcal/I");
   fTreeTilted->Branch("col", &col, "col/I");
   fTreeTilted->Branch("row", &row, "row/I");
-  fTreeTilted->Branch("flux", &flux, "flux/F");
-  fTreeTilted->Branch("x", &x, "x/F");
-  fTreeTilted->Branch("y", &y, "y/F");
+  fTreeTilted->Branch("flux", &flux, "flux/D");
+  fTreeTilted->Branch("x", &x, "x/D");
+  fTreeTilted->Branch("y", &y, "y/D");
 
   G4cout << "Booked output file for tilted telescope" << G4endl;
    
