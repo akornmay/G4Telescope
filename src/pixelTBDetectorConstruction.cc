@@ -338,10 +338,33 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
 
   G4ThreeVector posT[16];
 
+  G4double xsize = 0.15*CLHEP::mm*52/2;
+  G4double ysize = 0.10*CLHEP::mm*80/2;
+
+
   for(size_t ii=0; ii<16; ii++) posT[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, tiltedTelescopePosition + ChamberSpacing*G4double(ii+1));
   //for(size_t ii=4; ii<8; ii++) posT[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, ChamberSpacing*G4double(ii+2));
+  G4RotationMatrix rotmatrix = *mirror_rot;
+  rotmatrix.invert();
 
   for(size_t ii=0; ii<8; ii++){
+
+    //Do the transformations to get the positions of all points we need to define a new coordinate system
+    G4ThreeVector lowLeftCorner(-xsize,-ysize,0.5*ChamberWidth);
+    G4ThreeVector upLeftCorner(-xsize,ysize,0.5*ChamberWidth);
+    G4ThreeVector lowRightCorner(xsize,-ysize,0.5*ChamberWidth);
+
+    // lowLeftCorner.transform(*mirror_rot);
+    // upLeftCorner.transform(*mirror_rot);
+    // lowRightCorner.transform(*mirror_rot);
+ 
+    lowLeftCorner.transform(rotmatrix);
+    upLeftCorner.transform(rotmatrix);
+    lowRightCorner.transform(rotmatrix);
+   
+    origROC[ii] = lowLeftCorner + posT[ii];
+    upleftROC[ii] = upLeftCorner + posT[ii];
+    lowrightROC[ii] = lowRightCorner + posT[ii];
 
     logicTracker[ii] = new G4LogicalVolume(solidTracker , Air, "Tracker",0,0,0);
     physiTracker[ii] = new G4PVPlacement(mirror_rot,//0,              // rotated
@@ -354,6 +377,16 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
   }
 
   for(size_t ii=8; ii<16; ii++){
+
+    //Do the transformations to get the positions of all points we need to define a new coordinate system
+    G4ThreeVector lowLeftCorner(-xsize,-ysize,0.5*ChamberWidth);
+    G4ThreeVector upLeftCorner(-xsize,ysize,0.5*ChamberWidth);
+    G4ThreeVector lowRightCorner(xsize,-ysize,0.5*ChamberWidth);
+    
+    origROC[ii] = lowLeftCorner + posT[ii];
+    upleftROC[ii] = upLeftCorner + posT[ii];
+    lowrightROC[ii] = lowRightCorner + posT[ii];
+
 
     logicTracker[ii] = new G4LogicalVolume(solidTracker , Air, "Tracker",0,0,0);
     physiTracker[ii] = new G4PVPlacement(0,              // no rotation
@@ -446,7 +479,11 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
   G4ThreeVector posT2[16];
 
   //original  for(size_t ii=0; ii<16; ii++) posT2[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, tiltedTelescopePosition + ChamberSpacing*G4double(ii+1)+(0.5*(BoardWidth+ROCWidth+ChamberWidth)));
-  for(size_t ii=0; ii<16; ii++) posT2[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, tiltedTelescopePosition + ChamberSpacing*G4double(ii+1)-(0.5*(BoardWidth+ROCWidth+ChamberWidth)));
+  for(size_t ii=0; ii<16; ii++) posT2[ii] = posT[ii] + GetNormalVector(G4int(ii))*(0.5*(BoardWidth+ROCWidth+ChamberWidth));
+
+
+
+  // for(size_t ii=0; ii<16; ii++) posT2[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, tiltedTelescopePosition + ChamberSpacing*G4double(ii+1)-(0.5*(BoardWidth+ROCWidth+ChamberWidth)));
   //for(size_t ii=4; ii<8; ii++) posT2[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, ChamberSpacing*G4double(ii+2)+(0.5*(BoardWidth+ROCWidth+ChamberWidth)));
 
   for(size_t ii=0; ii<8; ii++){
@@ -838,3 +875,13 @@ void pixelTBDetectorConstruction::SetMaxStep(G4double maxStep)
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+G4ThreeVector pixelTBDetectorConstruction::GetNormalVector(G4int ROC)
+{
+
+  G4ThreeVector U = upleftROC[ROC] - origROC[ROC];
+  G4ThreeVector V = lowrightROC[ROC] - origROC[ROC];
+  G4ThreeVector N = U.cross(V);
+  N = N / N.mag();
+  return N;
+}

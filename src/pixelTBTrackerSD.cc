@@ -76,6 +76,7 @@ G4bool pixelTBTrackerSD::ProcessHits(G4Step* aStep,G4TouchableHistory*)
                                                ->GetCopyNumber());
   newHit->SetEdep     (edep);
   newHit->SetPos      (aStep->GetPostStepPoint()->GetPosition());
+  newHit->SetDir      (aStep->GetTrack()->GetMomentumDirection());
   trackerCollection->insert( newHit );
   
   //newHit->Print();

@@ -56,6 +56,7 @@ pixelTBTrackerHit::pixelTBTrackerHit(const pixelTBTrackerHit& right)
   chamberNb = right.chamberNb;
   edep      = right.edep;
   pos       = right.pos;
+  direction = right.direction;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -66,6 +67,7 @@ const pixelTBTrackerHit& pixelTBTrackerHit::operator=(const pixelTBTrackerHit& r
   chamberNb = right.chamberNb;
   edep      = right.edep;
   pos       = right.pos;
+  direction = right.direction;
   return *this;
 }
 
@@ -99,7 +101,8 @@ void pixelTBTrackerHit::Print()
 {
   G4cout << "  trackID: " << trackID << "  chamberNb: " << chamberNb
          << "  energy deposit: " << edep/CLHEP::keV << " keV " //G4BestUnit(edep,"Energy")
-	 << "  position: " << G4BestUnit(pos,"Length") << G4endl;
+	 << "  position: " << G4BestUnit(pos,"Length")
+	 << "  direction: " << G4BestUnit(direction,"Length") << G4endl;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

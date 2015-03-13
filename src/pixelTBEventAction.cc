@@ -29,7 +29,10 @@
 //
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
- 
+
+#include <map>
+#include <vector> 
+
 #include "pixelTBEventAction.hh"
 
 #include "G4Event.hh"
@@ -110,14 +113,37 @@ void pixelTBEventAction::EndOfEventAction(const G4Event* evt)
       if(NbHits != 0)
 	{
 	  //initialize a empty array
-	  G4double pixelArray[16][52][80] = {{{0}}};
+	  //	  G4double pixelArray[16][52][80] = {{{0}}};
+
+	  std::map<int,pixelTBTrackerHit> mapofHits;
+	  G4int returnROC = -999;
+	  G4int maxROC = -1;
+	  G4int minROC = 17;
 
 	  for(G4int i = 0; i < NbHits; i++)
 	    {
-	      fHistManager->CollectHits((*trackerCollection)[i], evt->GetEventID(),pixelArray);
+	      fHistManager->CollectHits((*trackerCollection)[i], evt->GetEventID(),mapofHits);
 	    }
 
-	  fHistManager->AddHits(pixelArray, evt->GetEventID());
+	  G4cout << "Mapsize is " << mapofHits.size() << G4endl;
+
+	  for(std::map<int,pixelTBTrackerHit>::iterator it = mapofHits.begin(); it != mapofHits.end(); ++it)
+	    {
+	      fHistManager->AddHit(&(it->second),evt->GetEventID(),returnROC);
+	      
+	      if(returnROC > maxROC)
+		{
+		  maxROC = returnROC;
+		}
+	      if(returnROC < minROC)
+		{
+		  minROC = returnROC;
+		}
+	      
+	    }
+	  if(minROC > 7) fHistManager->AddEmptyEvent(evt->GetEventID(),2);  //we have an empty event in testboard2/tilted telescope
+	  if(maxROC < 8) fHistManager->AddEmptyEvent(evt->GetEventID(),1);  //we have an empty event in testboard1/straight telescope
+	  
 	}
 
     }

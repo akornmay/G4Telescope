@@ -40,6 +40,7 @@
 
 #include "globals.hh"
 #include "G4VPVParameterisation.hh"
+#include "G4ThreeVector.hh"
 
 class G4VPhysicalVolume;
 class G4Box;
@@ -57,6 +58,15 @@ class G4Tubs;
 class G4Polycone;
 class G4Polyhedra;
 
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+struct boxsize{
+
+  G4double halfX;
+  G4double halfY;
+  G4double halfZ;
+  G4bool set;
+};
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 class pixelTBChamberParameterisation : public G4VPVParameterisation
@@ -81,6 +91,7 @@ class pixelTBChamberParameterisation : public G4VPVParameterisation
     void ComputeDimensions (G4Box & trackerLayer, const G4int copyNo,
                             const G4VPhysicalVolume* physVol) const;
 
+ 
 
   private:  // Dummy declarations to get rid of warnings ...
 
@@ -96,6 +107,9 @@ class pixelTBChamberParameterisation : public G4VPVParameterisation
     void ComputeDimensions (G4Polycone&,const G4int,const G4VPhysicalVolume*) const {}
     void ComputeDimensions (G4Polyhedra&,const G4int,const G4VPhysicalVolume*) const {}
   private:
+
+    mutable G4ThreeVector* myPosVectors[4160*9];
+    mutable boxsize myChamberSizes[4160*9];
 
     G4int    fNoChambers;   
     G4double fStartZ;

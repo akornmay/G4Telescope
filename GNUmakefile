@@ -14,7 +14,7 @@ endif
 .PHONY: all
 all: lib bin
 
-CPPFLAGS += -I$(shell root-config --incdir) 
+CPPFLAGS += -I$(shell root-config --incdir) -std=c++0x -O3
 EXTRALIBS = $(shell root-config --glibs)
 
 

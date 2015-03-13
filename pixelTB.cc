@@ -53,12 +53,14 @@
 #endif
 
 #include "Randomize.hh"
-
+#include <unistd.h>
 
 
 void ReadSettings(char* confFile, HistoManager* histo)
 {
   //  G4cout << "Reading configuration from file" << G4endl;
+
+  usleep(100);
 
   if(confFile[0]=='\0')
     {
@@ -209,6 +211,9 @@ int main(int argc,char** argv)
   //
   runManager->Initialize();
       
+  //get the detector coordinates
+  histo->SetROCVectors(detector->origROC, detector->upleftROC, detector->lowrightROC);
+
 #ifdef G4VIS_USE
   G4VisManager* visManager = new G4VisExecutive;
   visManager->Initialize();
@@ -246,7 +251,7 @@ int main(int argc,char** argv)
 
   delete runManager;
   delete verbosity;
-
+  delete histo;
   return 0;
 }
 

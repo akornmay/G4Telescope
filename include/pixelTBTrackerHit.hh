@@ -62,11 +62,13 @@ class pixelTBTrackerHit : public G4VHit
       void SetChamberNb(G4int chamb)      { chamberNb = chamb; };  
       void SetEdep     (G4double de)      { edep = de; };
       void SetPos      (G4ThreeVector xyz){ pos = xyz; };
-      
+      void SetDir      (G4ThreeVector xyz){ direction = xyz; };      
+
       G4int GetTrackID()    { return trackID; };
       G4int GetChamberNb()  { return chamberNb; };
       G4double GetEdep()    { return edep; };      
       G4ThreeVector GetPos(){ return pos; };
+      G4ThreeVector GetDir(){ return direction; };
       
   private:
   
@@ -74,6 +76,7 @@ class pixelTBTrackerHit : public G4VHit
       G4int         chamberNb;
       G4double      edep;
       G4ThreeVector pos;
+      G4ThreeVector direction;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

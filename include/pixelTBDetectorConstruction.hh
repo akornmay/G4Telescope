@@ -74,6 +74,10 @@ class pixelTBDetectorConstruction : public G4VUserDetectorConstruction
      G4double fCSZonePercentageX;
      G4double fCSZonePercentageY;
 
+     G4ThreeVector origROC[16];      //this will store all the origins of the ROCs
+     G4ThreeVector upleftROC[16];      //this will store all the origins of the ROCs
+     G4ThreeVector lowrightROC[16];      //this will store all the origins of the ROCs
+     G4ThreeVector GetNormalVector(G4int ROC);
 
 
   private:

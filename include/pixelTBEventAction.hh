@@ -34,6 +34,7 @@
 #define pixelTBEventAction_h 1
 
 #include "G4UserEventAction.hh"
+#include <map>
 
 class G4Event;
 class HistoManager;

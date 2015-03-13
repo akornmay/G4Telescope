@@ -227,16 +227,21 @@ void HistoManager::AddHit(pixelTBTrackerHit* Hit,G4int EventNumber, G4int &retur
 
   //  position
   G4ThreeVector pos = Hit->GetPos();
-  x = pos.getX(); //get's returned in mm
-  y = pos.getY(); //get's returned in mm
   z = pos.getZ(); //get's returned in mm
-  //
-  //  col = 52 / 2 + x / 0.15;
-  //  row = 80 / 2 + y / 0.1 ;
-  col = Hit->GetChamberNb()%52;
-  row = Hit->GetChamberNb()/52;
   returnROC = (int) (z/16.0 + 0.5) - 11;
+  
+  
+
+  G4ThreeVector onPlaneHit = projectOnSensorPlane(Hit);
+  x = onPlaneHit.getX(); //get's returned in mm
+  y = onPlaneHit.getY(); //get's returned in mm
+  z = onPlaneHit.getZ(); //get's returned in mm
+
   eventNr = EventNumber;
+
+  col = Hit->GetChamberNb()%(52*3)/3;
+  row = Hit->GetChamberNb()/(52*3)/3;
+
 
   if(returnROC < 8)
     {
@@ -250,6 +255,29 @@ void HistoManager::AddHit(pixelTBTrackerHit* Hit,G4int EventNumber, G4int &retur
       //      G4cout << "Filling straight" << G4endl;
       fTreeStraight->Fill();
     }
+
+}
+
+void HistoManager::AddHits3by3(pixelTBTrackerHit* Hit, G4int EventNumber, G4int &returnROC)
+{
+  //first we check where the hit was
+  G4ThreeVector pos = Hit->GetPos();
+  z = pos.getZ(); //get's returned in mm
+  returnROC = (int) (z/16.0 + 0.5) - 11;
+
+  G4ThreeVector onPlaneHit = projectOnSensorPlane(Hit);
+
+
+  x = onPlaneHit.getX(); //get's returned in mm
+  y = onPlaneHit.getY(); //get's returned in mm
+  z = onPlaneHit.getZ(); //get's returned in mm
+
+  //now let's get the pixel number
+
+
+
+
+
 
 }
 
@@ -305,25 +333,29 @@ void HistoManager::AddHits(G4double pixelArray[16][52][80], G4int EventNumber)
 
 
 
-void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber,G4double pixelArray[16][52][80])
+void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::map<int,pixelTBTrackerHit>& mapofHits)
 {
   // let's manipulate all the pixels in the array that are hit
   // I assume that the array has been initialized to be all 0
 
   // we need the number of the chamber that was hit
 
-  G4int chamberNo = Hit->GetChamberNb();
+  pixelTBTrackerHit originalHit = *Hit;
+  G4double totalEnergy = originalHit.GetEdep();
+
+  G4int chamberNo = originalHit.GetChamberNb();
   const G4int nCol = 52 * 3;
   //const G4int nRow = 80 * 3;
   //const G4int npixel = nCol * nRow;
 
- G4ThreeVector pos = Hit->GetPos();
- G4int ROC = (int)(pos.getZ()/16.0 +0.5) - 11;
- G4int Col = (chamberNo%nCol)/3;
- G4int Row = (chamberNo/nCol)/3;
+  G4ThreeVector pos = originalHit.GetPos();
+  G4int ROC = (int)(pos.getZ()/16.0 +0.5) - 11;
+  G4int Col = (chamberNo%nCol)/3;
+  G4int Row = (chamberNo/nCol)/3;
+  
+  G4double CSFraction = 0.33;
 
- G4double CSFraction = 0.33;
-
+ //let's save everything in a map
 
  if((chamberNo%nCol)%3 == 0) // this gives the COL
    {
@@ -332,12 +364,56 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber,G4doubl
 	 //this is a left-center hit, we share charge to the pixel on the left
 	 if(Col != 0)
 	   {
-	     pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-	     pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
+	     //pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+	     //pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
+
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep((1-CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-CSFraction)*totalEnergy);
+	       }
+	     //same for the pixel we share the charge with
+
+	     if(mapofHits.count(ROC*10000+(Col-1)*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo -1);
+		 mapofHits[ROC*10000+(Col-1)*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+(Col-1)*100+Row].GetEdep();
+		 mapofHits[ROC*10000+(Col-1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
+
 	   }
 	 else
 	   {
-	     pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	     // pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + totalEnergy);
+	       }
+
 	   }
 
        }
@@ -346,27 +422,145 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber,G4doubl
 	 //this is a left-bottom hit, we have to share some charge to the neigboring pixels
 	 if(Col != 0 && Row != 0)
 	   {
-	     //pixelArray[ROC][Col][Row] += (1-1.5*CSFraction)*Hit->GetEdep();
-	     pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
-	     //pixelArray[ROC][Col-1][Row-1] += 0.5*CSFraction*Hit->GetEdep();
-	     pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
-	     pixelArray[ROC][Col][Row-1] += CSFraction*Hit->GetEdep();
+	    
+	     //pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
+	     //pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
+	     //pixelArray[ROC][Col][Row-1] += CSFraction*Hit->GetEdep();
+
+	     //pixelHit
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep((1-2*CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-2*CSFraction)*totalEnergy);
+	       }
+	     //chargeSharing Col-1
+	     if(mapofHits.count(ROC*10000+(Col-1)*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo -1);
+		 mapofHits[ROC*10000+(Col-1)*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+(Col-1)*100+Row].GetEdep();
+		 mapofHits[ROC*10000+(Col-1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
+	     //chargeSharing row-1
+	     if(mapofHits.count(ROC*10000+Col*100+(Row-1)) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo - nCol );
+		 mapofHits[ROC*10000+Col*100+(Row-1)] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+(Row-1)].GetEdep();
+		 mapofHits[ROC*10000+Col-1*100+(Row-1)].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
+
 	   }
 	 else
 	   {
 	     if(Col == 0 && Row != 0)
 	       {
-		 pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-		 pixelArray[ROC][Col][Row-1] += CSFraction*Hit->GetEdep();
+		 // pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+		 //pixelHit
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep((1-1*CSFraction)*totalEnergy);
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-2*CSFraction)*totalEnergy);
+		   }
+		 //		 pixelArray[ROC][Col][Row-1] += CSFraction*Hit->GetEdep();
+		 //chargeSharing row-1
+		 if(mapofHits.count(ROC*10000+Col*100+(Row-1)) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep(CSFraction*totalEnergy);
+		     Hit->SetChamberNb(chamberNo - nCol );
+		     mapofHits[ROC*10000+Col*100+(Row-1)] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+(Row-1)].GetEdep();
+		     mapofHits[ROC*10000+Col-1*100+(Row-1)].SetEdep(tempE + CSFraction*totalEnergy);
+		   }
+		 
 	       }
 	     else if(Col != 0 && Row == 0)
 	       {
-		 pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-		 pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
+		 //		 pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+		 //pixelHit
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep((1-1*CSFraction)*totalEnergy);
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-2*CSFraction)*totalEnergy);
+		   }
+
+		 //		 pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
+		 //chargeSharing Col-1
+		 if(mapofHits.count(ROC*10000+(Col-1)*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep(CSFraction*totalEnergy);
+		     Hit->SetChamberNb(chamberNo -1);
+		     mapofHits[ROC*10000+(Col-1)*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+(Col-1)*100+Row].GetEdep();
+		     mapofHits[ROC*10000+(Col-1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+		   }
 	       }
 	     else
 	       {
-		 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+		 //	 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+		 //pixelHit
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + totalEnergy);
+		   }
 	       }
 	   }
        }
@@ -376,27 +570,150 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber,G4doubl
 	 //this is a left-top hit, we have to share some charge to the neighboring pixel
 	 if(Col != 0 && Row != 79)
 	   {
-	     //pixelArray[ROC][Col][Row] += (1-1.5*CSFraction)*Hit->GetEdep();
-	     pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
-	     //pixelArray[ROC][Col-1][Row+1] += 0.5*CSFraction*Hit->GetEdep();
-	     pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
-	     pixelArray[ROC][Col][Row+1] += CSFraction*Hit->GetEdep();
+	     //pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
+	     //pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
+	     //pixelArray[ROC][Col][Row+1] += CSFraction*Hit->GetEdep();
+
+	     //pixelHit
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep((1-2*CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-2*CSFraction)*totalEnergy);
+	       }
+	     //chargeSharing Col-1
+	     if(mapofHits.count(ROC*10000+(Col-1)*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo -1);
+		 mapofHits[ROC*10000+(Col-1)*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+(Col-1)*100+Row].GetEdep();
+		 mapofHits[ROC*10000+(Col-1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
+	     //chargeSharing row+1
+	     if(mapofHits.count(ROC*10000+Col*100+(Row+1)) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo + nCol );
+		 mapofHits[ROC*10000+Col*100+(Row+1)] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+(Row+1)].GetEdep();
+		 mapofHits[ROC*10000+Col-1*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
+
 	   }
 	 else
 	   {
 	     if(Col == 0 && Row != 79)
 	       {
-		 pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-		 pixelArray[ROC][Col][Row+1] += CSFraction*Hit->GetEdep();
+		 // pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+		 // pixelArray[ROC][Col][Row+1] += CSFraction*Hit->GetEdep();
+
+		 //pixelHit
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep((1-1*CSFraction)*totalEnergy);
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-1*CSFraction)*totalEnergy);
+		   }
+		 //chargeSharing row+1
+		 if(mapofHits.count(ROC*10000+Col*100+(Row+1)) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep(CSFraction*totalEnergy);
+		     Hit->SetChamberNb(chamberNo + nCol );
+		     mapofHits[ROC*10000+Col*100+(Row+1)] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+(Row+1)].GetEdep();
+		     mapofHits[ROC*10000+Col-1*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
+		   }
+
+
+
 	       }
 	     else if(Col != 0 && Row == 79)
 	       {
-		 pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-		 pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
+		 //pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+		 //pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
+
+		 //pixelHit
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep((1-1*CSFraction)*totalEnergy);
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-1*CSFraction)*totalEnergy);
+		   }
+		 //chargeSharing Col-1
+		 if(mapofHits.count(ROC*10000+(Col-1)*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep(CSFraction*totalEnergy);
+		     Hit->SetChamberNb(chamberNo -1);
+		     mapofHits[ROC*10000+(Col-1)*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+(Col-1)*100+Row].GetEdep();
+		     mapofHits[ROC*10000+(Col-1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+		   }
+	  
 	       }
 	     else
 	       {
-		 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+		 //pixelArray[ROC][Col][Row] += Hit->GetEdep();
+
+		 //pixelHit
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + totalEnergy);
+		   }
+	   
 	       }
 	   }
        }
@@ -409,19 +726,76 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber,G4doubl
      if((chamberNo/nCol)%3 == 1) // this gives the ROW
        {
 	 //this is a center hit, all the charge stays in one pixel
-	 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	 //pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	 //pixelHit
+	 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	   {
+	     //if the pixel is not hit yet, we add the hit to our collection
+	     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	   }
+	 else
+	   {
+	     //the pixel was already hit, we just add the energy to the already hit pixel
+	     G4double tempE;
+	     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+	     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + totalEnergy);
+	   }
+	 
        }
      if((chamberNo/nCol)%3 == 0) // this gives the ROW
        {
 	 //this is a bottom hit, we have to share some charge to the pixel underneath
 	 if(Row != 0)
 	   {
-	     pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-	     pixelArray[ROC][Col][Row - 1] += CSFraction*Hit->GetEdep();
+	     // pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+	     //pixelArray[ROC][Col][Row - 1] += CSFraction*Hit->GetEdep();
+	  
+//pixelHit
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep((1-1*CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-1*CSFraction)*totalEnergy);
+	       }
+	     //chargeSharing row-1
+	     if(mapofHits.count(ROC*10000+Col*100+(Row-1)) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo - nCol );
+		 mapofHits[ROC*10000+Col*100+(Row-1)] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+(Row-1)].GetEdep();
+		 mapofHits[ROC*10000+Col-1*100+(Row-1)].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
+
 	   }
 	 else
 	   {
-	     pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	     //pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + totalEnergy);
+	       }
 	   }
        }
      if((chamberNo/nCol)%3 == 2) // this gives the ROW
@@ -429,12 +803,55 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber,G4doubl
 	 //this is a top hit, we have to share some charge to the pixel above
 	 if(Row != 79)
 	   {
-	     pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-	     pixelArray[ROC][Col][Row + 1] += CSFraction*Hit->GetEdep();
+	     // pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+	     //pixelArray[ROC][Col][Row + 1] += CSFraction*Hit->GetEdep();
+
+	     //pixelHit
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep((1-1*CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-1*CSFraction)*totalEnergy);
+	       }
+	     //chargeSharing row+1
+	     if(mapofHits.count(ROC*10000+Col*100+(Row-1)) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo + nCol );
+		 mapofHits[ROC*10000+Col*100+(Row+1)] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+(Row+1)].GetEdep();
+		 mapofHits[ROC*10000+Col-1*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
 	   }
 	 else
 	   {
-	     pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	     //pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + totalEnergy);
+	       }
+
 	   }
        }
    }
@@ -447,12 +864,56 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber,G4doubl
 	 //this is a right-center hit, we share charge to the pixel on the right
 	 if(Col != 51)
 	   {
-	     pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-	     pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
+	     //pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+	     //pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
+	     // pixel hit
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep((1-CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-CSFraction)*totalEnergy);
+	       }
+	     //same for the pixel we share the charge with
+
+	     if(mapofHits.count(ROC*10000+(Col+1)*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo + 1);
+		 mapofHits[ROC*10000+(Col+1)*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+(Col+1)*100+Row].GetEdep();
+		 mapofHits[ROC*10000+(Col+1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
+
 	   }
 	 else
 	   {
-	     pixelArray[ROC][Col][Row] += Hit->GetEdep();
+	     //	     pixelArray[ROC][Col][Row] += Hit->GetEdep();
+
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + totalEnergy);
+	       }
 	   }
 
        }
@@ -461,27 +922,146 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber,G4doubl
 	 //this is a right-top hit, we have to share some charge to the neigboring pixels
 	 if(Col != 51 && Row != 79)
 	   {
-	     //	     pixelArray[ROC][Col][Row] += (1-1.5*CSFraction)*Hit->GetEdep();
-	     pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
-	     //	     pixelArray[ROC][Col+1][Row+1] += 0.5*CSFraction*Hit->GetEdep();
-	     pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
-	     pixelArray[ROC][Col][Row+1] += CSFraction*Hit->GetEdep();
+	     // pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
+	     // pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
+	     // pixelArray[ROC][Col][Row+1] += CSFraction*Hit->GetEdep();
+
+	     //pixelHit
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep((1-2*CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-2*CSFraction)*totalEnergy);
+	       }
+	     //chargeSharing Col+1
+	     if(mapofHits.count(ROC*10000+(Col+1)*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo +1);
+		 mapofHits[ROC*10000+(Col+1)*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+(Col+1)*100+Row].GetEdep();
+		 mapofHits[ROC*10000+(Col+1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
+	     //chargeSharing row+1
+	     if(mapofHits.count(ROC*10000+Col*100+(Row+1)) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo + nCol );
+		 mapofHits[ROC*10000+Col*100+(Row+1)] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+(Row+1)].GetEdep();
+		 mapofHits[ROC*10000+Col-1*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
+
+
 	   }
 	 else
 	   {
 	     if(Col == 51 && Row != 79)
 	       {
-		 pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-		 pixelArray[ROC][Col][Row+1] += CSFraction*Hit->GetEdep();
+		 // pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+		 // pixelArray[ROC][Col][Row+1] += CSFraction*Hit->GetEdep();
+	       
+		 //pixelHit
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep((1-1*CSFraction)*totalEnergy);
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-1*CSFraction)*totalEnergy);
+		   }
+		 //chargeSharing row+1
+		 if(mapofHits.count(ROC*10000+Col*100+(Row+1)) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep(CSFraction*totalEnergy);
+		     Hit->SetChamberNb(chamberNo + nCol );
+		     mapofHits[ROC*10000+Col*100+(Row+1)] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+(Row+1)].GetEdep();
+		     mapofHits[ROC*10000+Col-1*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
+		   }
+
+
 	       }
 	     else if(Col != 51 && Row == 79)
 	       {
-		 pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-		 pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
+		 // pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+		 // pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
+		 //pixelHit
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep((1-1*CSFraction)*totalEnergy);
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-1*CSFraction)*totalEnergy);
+		   }
+		 //chargeSharing Col+1
+		 if(mapofHits.count(ROC*10000+(Col+1)*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep(CSFraction*totalEnergy);
+		     Hit->SetChamberNb(chamberNo +1);
+		     mapofHits[ROC*10000+(Col+1)*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+(Col+1)*100+Row].GetEdep();
+		     mapofHits[ROC*10000+(Col+1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+		   }
+
 	       }
 	     else
 	       {
-		 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+		 //	 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + totalEnergy);
+		   }
 	       }
 	   }
        }
@@ -491,27 +1071,146 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber,G4doubl
 	 //this is a right-bottom hit, we have to share some charge to the neighboring pixel
 	 if(Col != 51 && Row != 0)
 	   {
-	     //	     pixelArray[ROC][Col][Row] += (1-1.5*CSFraction)*Hit->GetEdep();
-	     pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
-	     //	     pixelArray[ROC][Col+1][Row-1] += 0.5*CSFraction*Hit->GetEdep();
-	     pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
-	     pixelArray[ROC][Col][Row-1] += CSFraction*Hit->GetEdep();
+	     // pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
+	     // pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
+	     // pixelArray[ROC][Col][Row-1] += CSFraction*Hit->GetEdep();
+
+	     //pixelHit
+	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep((1-2*CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-2*CSFraction)*totalEnergy);
+	       }
+	     //chargeSharing Col+1
+	     if(mapofHits.count(ROC*10000+(Col+1)*100+Row) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo +1);
+		 mapofHits[ROC*10000+(Col+1)*100+Row] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+(Col+1)*100+Row].GetEdep();
+		 mapofHits[ROC*10000+(Col+1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
+	     //chargeSharing row-1
+	     if(mapofHits.count(ROC*10000+Col*100+(Row-1)) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetChamberNb(chamberNo - nCol );
+		 mapofHits[ROC*10000+Col*100+(Row-1)] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+Col*100+(Row-1)].GetEdep();
+		 mapofHits[ROC*10000+Col-1*100+(Row-1)].SetEdep(tempE + CSFraction*totalEnergy);
+	       }
 	   }
 	 else
 	   {
 	     if(Col == 51 && Row != 0)
 	       {
-		 pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-		 pixelArray[ROC][Col][Row-1] += CSFraction*Hit->GetEdep();
+		 //pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+		 //pixelArray[ROC][Col][Row-1] += CSFraction*Hit->GetEdep();
+
+		 //pixelHit
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep((1-1*CSFraction)*totalEnergy);
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-1*CSFraction)*totalEnergy);
+		   }
+		 //chargeSharing row+1
+		 if(mapofHits.count(ROC*10000+Col*100+(Row-1)) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep(CSFraction*totalEnergy);
+		     Hit->SetChamberNb(chamberNo - nCol );
+		     mapofHits[ROC*10000+Col*100+(Row-1)] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+(Row-1)].GetEdep();
+		     mapofHits[ROC*10000+Col-1*100+(Row-1)].SetEdep(tempE + CSFraction*totalEnergy);
+		   }
+
 	       }
 	     else if(Col != 51 && Row == 0)
 	       {
-		 pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-		 pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
+		 // pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
+		 //pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
+
+		 //pixelHit
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep((1-1*CSFraction)*totalEnergy);
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-1*CSFraction)*totalEnergy);
+		   }
+		 //chargeSharing Col+1
+		 if(mapofHits.count(ROC*10000+(Col+1)*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     Hit->SetEdep(CSFraction*totalEnergy);
+		     Hit->SetChamberNb(chamberNo +1);
+		     mapofHits[ROC*10000+(Col+1)*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+(Col+1)*100+Row].GetEdep();
+		     mapofHits[ROC*10000+(Col+1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+		   }
+
+
 	       }
 	     else
 	       {
-		 pixelArray[ROC][Col][Row] += Hit->GetEdep();
+		 //pixelArray[ROC][Col][Row] += Hit->GetEdep();
+		 if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
+		   {
+		     //if the pixel is not hit yet, we add the hit to our collection
+		     mapofHits[ROC*10000+Col*100+Row] = *Hit;
+		   }
+		 else
+		   {
+		     //the pixel was already hit, we just add the energy to the already hit pixel
+		     G4double tempE;
+		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
+		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + totalEnergy);
+		   }
+
 	       }
 	   }
        }
@@ -625,4 +1324,134 @@ G4int HistoManager::GetTriggerBucket()
   return fTriggerBucket;
 }
 
+
+void HistoManager::SetROCVectors(G4ThreeVector orROC[16], G4ThreeVector upleftROC[16], G4ThreeVector lowrightROC[16])
+{
+  //let's calculate the normed vectors
+
+  for(int ii = 0; ii < 16; ++ii)
+    {
+      origROC[ii] = orROC[ii];    //the vector of the origin does not need to be modified
+
+      // u is the vector pointing from row 0 to row 80
+      G4ThreeVector U = upleftROC[ii] - orROC[ii]; 
+      // v is the vector pointing from col 0 to col 52
+      G4ThreeVector V = lowrightROC[ii] - orROC[ii]; 
+
+      //now we have to norm these vectors 
+
+      UnormROC[ii] = U.unit();
+      //      UnormROC[ii] = UnormROC[ii] * 0.1*CLHEP::mm;
+      VnormROC[ii] = V.unit();
+      //VnormROC[ii] = VnormROC[ii] * 0.15*CLHEP::mm;
+
+      NnormROC[ii] =  UnormROC[ii].cross(VnormROC[ii]);
+
+
+      G4cout <<"ROC " << ii << " Unorm" << UnormROC[ii] <<" Mag " << UnormROC[ii].mag() << G4endl;
+      G4cout <<"ROC " << ii << " Vnorm" << VnormROC[ii] <<" Mag " << VnormROC[ii].mag() << G4endl;
+      G4cout <<"ROC " << ii << " Nnorm" << NnormROC[ii] <<" Mag " << NnormROC[ii].mag() << G4endl;
+
+      G4cout << "u x v is orthogonal? " <<  ((UnormROC[ii].isOrthogonal(VnormROC[ii])) ? "true" : "false") << G4endl;
+
+    }
+
+}
+
+G4double HistoManager::CheckHitDistance(pixelTBTrackerHit* Hit)
+{
+  G4ThreeVector pos = Hit->GetPos();
+  G4int ROC = (int) (z/16.0 + 0.5) - 11;
+
+  G4double distance = (NnormROC[ROC].dot(pos - origROC[ROC])) / NnormROC[ROC].mag(); 
+  return distance;
+
+}
+
+void HistoManager::CheckPixel(pixelTBTrackerHit* Hit)
+{
+  // let's check what pixel the hit is associated to by chamber number and by the position
+  G4int chamberNo = Hit->GetChamberNb();
+  const G4int nCol = 52;
+  //const G4int nRow = 80 * 3;
+  //const G4int npixel = nCol * nRow;
+  
+  G4ThreeVector pos = Hit->GetPos();
+  G4int ROC = (int)(pos.getZ()/16.0 +0.5) - 11;
+  G4int Col = (chamberNo%nCol);
+  G4int Row = (chamberNo/nCol);
+  
+
+  //now let's calculate the position of the hit projected on the plane
+
+  G4ThreeVector onPlaneHit = pos - CheckHitDistance(Hit)*NnormROC[ROC];
+  //  G4ThreeVector onPlaneVector = origROC[ROC] - onPlaneHit;
+  G4ThreeVector onPlaneVector = onPlaneHit - origROC[ROC];
+
+  G4double planeV = onPlaneVector.dot(VnormROC[ROC]) / (VnormROC[ROC].mag2());
+  G4double planeU = onPlaneVector.dot(UnormROC[ROC]) / (UnormROC[ROC].mag2());
+
+  G4int onPlaneCol = planeV / (0.15*CLHEP::mm);
+  G4int onPlaneRow = planeU / (0.10*CLHEP::mm);
+
+  G4cout << "COL>>> from Chamber(" << Col << ") from coord(" << onPlaneCol << ")" ;
+  (Col != onPlaneCol)? G4cout << "!!!!!!!!!!" << G4endl : G4cout << G4endl;
+  G4cout << "ROW>>> from Chamber(" << Row << ") from coord(" << onPlaneRow << ")" ;
+  (Row != onPlaneRow)? G4cout << "!!!!!!!!!!" << G4endl : G4cout << G4endl;
+
+  ///let's say we only spread charge to the next pixels in col and row direction, not diagonally
+  //in Col we spread the charge among pixel
+
+  G4int onPlaneColA = (planeV - 0.5 * 0.15*CLHEP::mm)/(0.15*CLHEP::mm);
+  G4int onPlaneColB = (planeV + 0.5 * 0.15*CLHEP::mm)/(0.15*CLHEP::mm);
+
+  G4cout << "Charge spread between Col " << onPlaneColA << " and Col " << onPlaneColB << G4endl;
+  G4double centerColA = 0.15*CLHEP::mm * onPlaneColA + 0.075*CLHEP::mm;
+  G4double centerColB = 0.15*CLHEP::mm * onPlaneColB + 0.075*CLHEP::mm;
+
+
+}
+
+
+G4ThreeVector HistoManager::projectOnSensorPlane(pixelTBTrackerHit* Hit){
+
+  G4ThreeVector pos = Hit->GetPos();
+  G4ThreeVector dir = Hit->GetDir();
+  G4int ROC = (int)(pos.getZ()/16.0 +0.5) - 11;
+
+  G4double d;
+
+  d = (origROC[ROC] - pos).dot(NnormROC[ROC]) / (dir.dot(NnormROC[ROC]));
+
+  return (d*dir + pos);
+
+  //  return  pos - CheckHitDistance(Hit)*NnormROC[ROC];
+
+}
+
+
+
+
+
+void HistoManager::getHitmap(pixelTBTrackerHit* Hit)
+{
+
+  // we only look at a single vertical plane, let's say ROC 8
+
+  G4int testROC = 8;
+  //the ROC the hit is on is
+  G4ThreeVector pos = Hit->GetPos();
+  G4int ROC = (int)(pos.getZ()/16.0 +0.5) - 11;
+
+  G4int posx = (int)(pos.getX() * 1000);   //in um
+  G4int posy = (int)(pos.getY() * 1000);   //in um
+
+
+  if( ROC == testROC)
+    {
+      //      G4cout << "Filling hitmap" << G4endl;
+      reducedHitmap->Fill(posx%300,posy%200);
+    }
+
+}
 

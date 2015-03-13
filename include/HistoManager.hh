@@ -36,6 +36,11 @@
 #define HistoManager_h 1
 
 #include "globals.hh"
+#include "G4Transform3D.hh"
+#include "G4RotationMatrix.hh"
+#include "G4ThreeVector.hh"
+#include <TH2D.h>
+#include <map>
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -63,7 +68,7 @@ public:
   void AddHit(pixelTBTrackerHit* Hit, G4int EventNumber, G4int &returnROC);
   void AddEmptyEvent(G4int EventNumber, G4int PixelTestBoard);
 
-  void CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, G4double pixArray[16][52][80]);
+  void CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::map<int,pixelTBTrackerHit>& mapofHits);
   void AddHits(G4double pixelArray[16][52][80], G4int EventNumber);
 
 
@@ -80,6 +85,13 @@ public:
 
   void SetQieDir(G4String qieDir);
 
+ void SetROCVectors(G4ThreeVector orROC[16], G4ThreeVector upleftROC[16], G4ThreeVector lowrightROC[16]);
+  G4double CheckHitDistance(pixelTBTrackerHit* Hit);
+  //std::pair<G4double,G4double> CheckPixel(pixelTBTrackerHit* Hit);
+  void CheckPixel(pixelTBTrackerHit* Hit);
+  void getHitmap(pixelTBTrackerHit* Hit);  
+
+  G4ThreeVector projectOnSensorPlane(pixelTBTrackerHit* Hit);
 
   double BEAMINTENSITY_PARAM1;		   
   double BEAMINTENSITY_PARAM2;		   
@@ -88,6 +100,8 @@ public:
   void SetTransparentMode(G4bool transparentMode){fTransparentMode = transparentMode;};
   void SetTriggerBucket(G4int TRIGGER_BUCKET);
   G4int GetTriggerBucket();
+
+  void AddHits3by3(pixelTBTrackerHit* Hit, G4int EventNumber, G4int &returnROC);
 
 private:
 
@@ -114,6 +128,18 @@ private:
 
   G4bool fTransparentMode;
   G4int fTriggerBucket;
+
+  G4ThreeVector origROC[16];
+  G4ThreeVector UnormROC[16]; //normed vector pointing from row 0 to row 80
+  G4ThreeVector VnormROC[16]; //normed vector pointing from col 0 to col 52
+  G4ThreeVector NnormROC[16]; //normed vector pointing out of the plane of the roc
+
+  TH1D* eta_straight;
+  TH1D* eta_tilted;
+
+  TH2D* reducedHitmap;
+
+
 
 };
 
