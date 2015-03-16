@@ -125,7 +125,7 @@ void pixelTBEventAction::EndOfEventAction(const G4Event* evt)
 	      fHistManager->CollectHits((*trackerCollection)[i], evt->GetEventID(),mapofHits);
 	    }
 
-	  G4cout << "Mapsize is " << mapofHits.size() << G4endl;
+	  //G4cout << "Mapsize is " << mapofHits.size() << G4endl;
 
 	  for(std::map<int,pixelTBTrackerHit>::iterator it = mapofHits.begin(); it != mapofHits.end(); ++it)
 	    {
