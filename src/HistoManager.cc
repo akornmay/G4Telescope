@@ -353,8 +353,8 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
   G4int Col = (chamberNo%nCol)/3;
   G4int Row = (chamberNo/nCol)/3;
   
-  G4double CSFraction = 0.33;
-
+  G4double CSFraction = 1/3.;
+  G4double CSFractionCorner = 1/9.;
  //let's save everything in a map
 
  if((chamberNo%nCol)%3 == 0) // this gives the COL
@@ -422,16 +422,11 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 	 //this is a left-bottom hit, we have to share some charge to the neigboring pixels
 	 if(Col != 0 && Row != 0)
 	   {
-	    
-	     //pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
-	     //pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
-	     //pixelArray[ROC][Col][Row-1] += CSFraction*Hit->GetEdep();
-
 	     //pixelHit
 	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep((1-2*CSFraction)*totalEnergy);
+		 Hit->SetEdep((1-5*CSFractionCorner)*totalEnergy);
 		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
 	       }
 	     else
@@ -439,13 +434,13 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
-		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-2*CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-5*CSFractionCorner)*totalEnergy);
 	       }
 	     //chargeSharing Col-1
 	     if(mapofHits.count(ROC*10000+(Col-1)*100+Row) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetEdep(2*CSFractionCorner*totalEnergy);
 		 Hit->SetChamberNb(chamberNo -1);
 		 mapofHits[ROC*10000+(Col-1)*100+Row] = *Hit;
 	       }
@@ -454,13 +449,13 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+(Col-1)*100+Row].GetEdep();
-		 mapofHits[ROC*10000+(Col-1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+		 mapofHits[ROC*10000+(Col-1)*100+Row].SetEdep(tempE + 2*CSFractionCorner*totalEnergy);
 	       }
 	     //chargeSharing row-1
 	     if(mapofHits.count(ROC*10000+Col*100+(Row-1)) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetEdep(2*CSFractionCorner*totalEnergy);
 		 Hit->SetChamberNb(chamberNo - nCol );
 		 mapofHits[ROC*10000+Col*100+(Row-1)] = *Hit;
 	       }
@@ -469,9 +464,23 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+Col*100+(Row-1)].GetEdep();
-		 mapofHits[ROC*10000+Col-1*100+(Row-1)].SetEdep(tempE + CSFraction*totalEnergy);
+		 mapofHits[ROC*10000+Col-1*100+(Row-1)].SetEdep(tempE + 2*CSFractionCorner*totalEnergy);
 	       }
-
+	     //chargeSharing row-1 and col-1
+	     if(mapofHits.count(ROC*10000+(Col-1)*100+(Row-1)) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFractionCorner*totalEnergy);
+		 Hit->SetChamberNb(chamberNo - nCol -1 );
+		 mapofHits[ROC*10000+(Col-1)*100+(Row-1)] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+(Col-1)*100+(Row-1)].GetEdep();
+		 mapofHits[ROC*10000+(Col-1)*100+(Row-1)].SetEdep(tempE + CSFractionCorner*totalEnergy);
+	       }
 	   }
 	 else
 	   {
@@ -570,15 +579,11 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 	 //this is a left-top hit, we have to share some charge to the neighboring pixel
 	 if(Col != 0 && Row != 79)
 	   {
-	     //pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
-	     //pixelArray[ROC][Col-1][Row] += CSFraction*Hit->GetEdep();
-	     //pixelArray[ROC][Col][Row+1] += CSFraction*Hit->GetEdep();
-
 	     //pixelHit
 	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep((1-2*CSFraction)*totalEnergy);
+		 Hit->SetEdep((1-5*CSFractionCorner)*totalEnergy);
 		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
 	       }
 	     else
@@ -586,13 +591,13 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
-		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-2*CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-5*CSFractionCorner)*totalEnergy);
 	       }
 	     //chargeSharing Col-1
 	     if(mapofHits.count(ROC*10000+(Col-1)*100+Row) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetEdep(2*CSFractionCorner*totalEnergy);
 		 Hit->SetChamberNb(chamberNo -1);
 		 mapofHits[ROC*10000+(Col-1)*100+Row] = *Hit;
 	       }
@@ -601,13 +606,13 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+(Col-1)*100+Row].GetEdep();
-		 mapofHits[ROC*10000+(Col-1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+		 mapofHits[ROC*10000+(Col-1)*100+Row].SetEdep(tempE + 2*CSFractionCorner*totalEnergy);
 	       }
 	     //chargeSharing row+1
 	     if(mapofHits.count(ROC*10000+Col*100+(Row+1)) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetEdep(2*CSFractionCorner*totalEnergy);
 		 Hit->SetChamberNb(chamberNo + nCol );
 		 mapofHits[ROC*10000+Col*100+(Row+1)] = *Hit;
 	       }
@@ -616,9 +621,23 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+Col*100+(Row+1)].GetEdep();
-		 mapofHits[ROC*10000+Col-1*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
+		 mapofHits[ROC*10000+Col-1*100+(Row+1)].SetEdep(tempE + 2*CSFractionCorner*totalEnergy);
 	       }
-
+	     //chargeSharing row+1 and col-1
+	     if(mapofHits.count(ROC*10000+(Col-1)*100+(Row+1)) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFractionCorner*totalEnergy);
+		 Hit->SetChamberNb(chamberNo + nCol -1 );
+		 mapofHits[ROC*10000+(Col-1)*100+(Row+1)] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+(Col-1)*100+(Row+1)].GetEdep();
+		 mapofHits[ROC*10000+(Col-1)*100+(Row+1)].SetEdep(tempE + CSFractionCorner*totalEnergy);
+	       }
 	   }
 	 else
 	   {
@@ -654,7 +673,7 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		     //the pixel was already hit, we just add the energy to the already hit pixel
 		     G4double tempE;
 		     tempE = mapofHits[ROC*10000+Col*100+(Row+1)].GetEdep();
-		     mapofHits[ROC*10000+Col-1*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
+		     mapofHits[ROC*10000+Col*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
 		   }
 
 
@@ -777,7 +796,7 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+Col*100+(Row-1)].GetEdep();
-		 mapofHits[ROC*10000+Col-1*100+(Row-1)].SetEdep(tempE + CSFraction*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+(Row-1)].SetEdep(tempE + CSFraction*totalEnergy);
 	       }
 
 	   }
@@ -821,7 +840,7 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-1*CSFraction)*totalEnergy);
 	       }
 	     //chargeSharing row+1
-	     if(mapofHits.count(ROC*10000+Col*100+(Row-1)) == 0)
+	     if(mapofHits.count(ROC*10000+Col*100+(Row+1)) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
 		 Hit->SetEdep(CSFraction*totalEnergy);
@@ -833,7 +852,7 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+Col*100+(Row+1)].GetEdep();
-		 mapofHits[ROC*10000+Col-1*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
 	       }
 	   }
 	 else
@@ -864,8 +883,6 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 	 //this is a right-center hit, we share charge to the pixel on the right
 	 if(Col != 51)
 	   {
-	     //pixelArray[ROC][Col][Row] += (1-CSFraction)*Hit->GetEdep();
-	     //pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
 	     // pixel hit
 	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
 	       {
@@ -922,15 +939,11 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 	 //this is a right-top hit, we have to share some charge to the neigboring pixels
 	 if(Col != 51 && Row != 79)
 	   {
-	     // pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
-	     // pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
-	     // pixelArray[ROC][Col][Row+1] += CSFraction*Hit->GetEdep();
-
 	     //pixelHit
 	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep((1-2*CSFraction)*totalEnergy);
+		 Hit->SetEdep((1-5*CSFractionCorner)*totalEnergy);
 		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
 	       }
 	     else
@@ -938,13 +951,13 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
-		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-2*CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-5*CSFractionCorner)*totalEnergy);
 	       }
 	     //chargeSharing Col+1
 	     if(mapofHits.count(ROC*10000+(Col+1)*100+Row) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetEdep(2*CSFractionCorner*totalEnergy);
 		 Hit->SetChamberNb(chamberNo +1);
 		 mapofHits[ROC*10000+(Col+1)*100+Row] = *Hit;
 	       }
@@ -953,13 +966,13 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+(Col+1)*100+Row].GetEdep();
-		 mapofHits[ROC*10000+(Col+1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+		 mapofHits[ROC*10000+(Col+1)*100+Row].SetEdep(tempE + 2*CSFractionCorner*totalEnergy);
 	       }
 	     //chargeSharing row+1
 	     if(mapofHits.count(ROC*10000+Col*100+(Row+1)) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetEdep(2*CSFractionCorner*totalEnergy);
 		 Hit->SetChamberNb(chamberNo + nCol );
 		 mapofHits[ROC*10000+Col*100+(Row+1)] = *Hit;
 	       }
@@ -968,9 +981,23 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+Col*100+(Row+1)].GetEdep();
-		 mapofHits[ROC*10000+Col-1*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+(Row+1)].SetEdep(tempE + 2*CSFractionCorner*totalEnergy);
 	       }
-
+	     //chargeSharing row+1 and col+1
+	     if(mapofHits.count(ROC*10000+(Col+1)*100+(Row+1)) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFractionCorner*totalEnergy);
+		 Hit->SetChamberNb(chamberNo + nCol + 1 );
+		 mapofHits[ROC*10000+(Col+1)*100+(Row+1)] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+(Col+1)*100+(Row+1)].GetEdep();
+		 mapofHits[ROC*10000+(Col+1)*100+(Row+1)].SetEdep(tempE + CSFractionCorner*totalEnergy);
+	       }
 
 	   }
 	 else
@@ -1007,7 +1034,7 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		     //the pixel was already hit, we just add the energy to the already hit pixel
 		     G4double tempE;
 		     tempE = mapofHits[ROC*10000+Col*100+(Row+1)].GetEdep();
-		     mapofHits[ROC*10000+Col-1*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
+		     mapofHits[ROC*10000+Col*100+(Row+1)].SetEdep(tempE + CSFraction*totalEnergy);
 		   }
 
 
@@ -1071,15 +1098,11 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 	 //this is a right-bottom hit, we have to share some charge to the neighboring pixel
 	 if(Col != 51 && Row != 0)
 	   {
-	     // pixelArray[ROC][Col][Row] += (1-2*CSFraction)*Hit->GetEdep();
-	     // pixelArray[ROC][Col+1][Row] += CSFraction*Hit->GetEdep();
-	     // pixelArray[ROC][Col][Row-1] += CSFraction*Hit->GetEdep();
-
 	     //pixelHit
 	     if(mapofHits.count(ROC*10000+Col*100+Row) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep((1-2*CSFraction)*totalEnergy);
+		 Hit->SetEdep((1-5*CSFractionCorner)*totalEnergy);
 		 mapofHits[ROC*10000+Col*100+Row] = *Hit;
 	       }
 	     else
@@ -1087,13 +1110,13 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
-		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-2*CSFraction)*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-5*CSFractionCorner)*totalEnergy);
 	       }
 	     //chargeSharing Col+1
 	     if(mapofHits.count(ROC*10000+(Col+1)*100+Row) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetEdep(2*CSFractionCorner*totalEnergy);
 		 Hit->SetChamberNb(chamberNo +1);
 		 mapofHits[ROC*10000+(Col+1)*100+Row] = *Hit;
 	       }
@@ -1102,13 +1125,13 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+(Col+1)*100+Row].GetEdep();
-		 mapofHits[ROC*10000+(Col+1)*100+Row].SetEdep(tempE + CSFraction*totalEnergy);
+		 mapofHits[ROC*10000+(Col+1)*100+Row].SetEdep(tempE + 2*CSFractionCorner*totalEnergy);
 	       }
 	     //chargeSharing row-1
 	     if(mapofHits.count(ROC*10000+Col*100+(Row-1)) == 0)
 	       {
 		 //if the pixel is not hit yet, we add the hit to our collection
-		 Hit->SetEdep(CSFraction*totalEnergy);
+		 Hit->SetEdep(2*CSFractionCorner*totalEnergy);
 		 Hit->SetChamberNb(chamberNo - nCol );
 		 mapofHits[ROC*10000+Col*100+(Row-1)] = *Hit;
 	       }
@@ -1117,8 +1140,24 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		 //the pixel was already hit, we just add the energy to the already hit pixel
 		 G4double tempE;
 		 tempE = mapofHits[ROC*10000+Col*100+(Row-1)].GetEdep();
-		 mapofHits[ROC*10000+Col-1*100+(Row-1)].SetEdep(tempE + CSFraction*totalEnergy);
+		 mapofHits[ROC*10000+Col*100+(Row-1)].SetEdep(tempE + 2*CSFractionCorner*totalEnergy);
 	       }
+	     //chargeSharing col+1 and row-1 
+	     if(mapofHits.count(ROC*10000+(Col+1)*100+(Row-1)) == 0)
+	       {
+		 //if the pixel is not hit yet, we add the hit to our collection
+		 Hit->SetEdep(CSFractionCorner*totalEnergy);
+		 Hit->SetChamberNb(chamberNo - nCol + 1 );
+		 mapofHits[ROC*10000+(Col+1)*100+(Row-1)] = *Hit;
+	       }
+	     else
+	       {
+		 //the pixel was already hit, we just add the energy to the already hit pixel
+		 G4double tempE;
+		 tempE = mapofHits[ROC*10000+(Col+1)*100+(Row-1)].GetEdep();
+		 mapofHits[ROC*10000+(Col+1)*100+(Row-1)].SetEdep(tempE + CSFractionCorner*totalEnergy);
+	       }
+	     ///////
 	   }
 	 else
 	   {
@@ -1141,7 +1180,7 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		     tempE = mapofHits[ROC*10000+Col*100+Row].GetEdep();
 		     mapofHits[ROC*10000+Col*100+Row].SetEdep(tempE + (1-1*CSFraction)*totalEnergy);
 		   }
-		 //chargeSharing row+1
+		 //chargeSharing row-1
 		 if(mapofHits.count(ROC*10000+Col*100+(Row-1)) == 0)
 		   {
 		     //if the pixel is not hit yet, we add the hit to our collection
@@ -1154,7 +1193,7 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 		     //the pixel was already hit, we just add the energy to the already hit pixel
 		     G4double tempE;
 		     tempE = mapofHits[ROC*10000+Col*100+(Row-1)].GetEdep();
-		     mapofHits[ROC*10000+Col-1*100+(Row-1)].SetEdep(tempE + CSFraction*totalEnergy);
+		     mapofHits[ROC*10000+Col*100+(Row-1)].SetEdep(tempE + CSFraction*totalEnergy);
 		   }
 
 	       }
