@@ -345,22 +345,23 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
   //apply some missalignment
   //  straight telescope
   posT[0] =  G4ThreeVector(0.*CLHEP::mm, 0.*CLHEP::mm , 0.*CLHEP::mm);
-  posT[1] =  G4ThreeVector(0.05*CLHEP::mm, 0.02*CLHEP::mm , 0.*CLHEP::mm);
-  posT[2] =  G4ThreeVector(-0.03*CLHEP::mm, 0.05*CLHEP::mm , 0.*CLHEP::mm);
-  posT[3] =  G4ThreeVector(-0.02*CLHEP::mm, -0.03*CLHEP::mm , 0.*CLHEP::mm);
-  posT[4] =  G4ThreeVector(0.025*CLHEP::mm, 0.015*CLHEP::mm , 0.*CLHEP::mm);
-  posT[5] =  G4ThreeVector(-0.01*CLHEP::mm, -0.015*CLHEP::mm , 0.*CLHEP::mm);
-  posT[6] =  G4ThreeVector(0.05*CLHEP::mm, -0.02*CLHEP::mm , 0.*CLHEP::mm);
-  posT[7] =  G4ThreeVector(0.02*CLHEP::mm, 0.03*CLHEP::mm , 0.*CLHEP::mm);
+  posT[1] =  G4ThreeVector(0.2*CLHEP::mm, 0.15*CLHEP::mm , 0.*CLHEP::mm);
+  posT[2] =  G4ThreeVector(-0.1*CLHEP::mm, 0.05*CLHEP::mm , 0.*CLHEP::mm);
+  posT[3] =  G4ThreeVector(-0.05*CLHEP::mm, -0.3*CLHEP::mm , 0.*CLHEP::mm);
+  posT[4] =  G4ThreeVector(0.25*CLHEP::mm, -0.15*CLHEP::mm , 0.*CLHEP::mm);
+  posT[5] =  G4ThreeVector(-0.1*CLHEP::mm, 0.0*CLHEP::mm , 0.*CLHEP::mm);
+  posT[6] =  G4ThreeVector(0.5*CLHEP::mm, -0.2*CLHEP::mm , 0.*CLHEP::mm);
+  posT[7] =  G4ThreeVector(0.2*CLHEP::mm, 0.3*CLHEP::mm , 0.*CLHEP::mm);
+
   //  tilted telescope
   posT[8] =  G4ThreeVector(0.*CLHEP::mm, 0.*CLHEP::mm , 0.*CLHEP::mm);
-  posT[9] =  G4ThreeVector(0.05*CLHEP::mm, 0.02*CLHEP::mm , 0.*CLHEP::mm);
-  posT[10] =  G4ThreeVector(-0.03*CLHEP::mm, 0.05*CLHEP::mm , 0.*CLHEP::mm);
-  posT[11] =  G4ThreeVector(-0.02*CLHEP::mm, -0.03*CLHEP::mm , 0.*CLHEP::mm);
-  posT[12] =  G4ThreeVector(0.025*CLHEP::mm, 0.015*CLHEP::mm , 0.*CLHEP::mm);
-  posT[13] =  G4ThreeVector(-0.01*CLHEP::mm, -0.015*CLHEP::mm , 0.*CLHEP::mm);
-  posT[14] =  G4ThreeVector(0.05*CLHEP::mm, -0.02*CLHEP::mm , 0.*CLHEP::mm);
-  posT[15] =  G4ThreeVector(0.02*CLHEP::mm, 0.03*CLHEP::mm , 0.*CLHEP::mm);
+  posT[9] =  G4ThreeVector(0.2*CLHEP::mm, 0.15*CLHEP::mm , 0.*CLHEP::mm);
+  posT[10] =  G4ThreeVector(-0.1*CLHEP::mm, 0.05*CLHEP::mm , 0.*CLHEP::mm);
+  posT[11] =  G4ThreeVector(-0.05*CLHEP::mm, -0.3*CLHEP::mm , 0.*CLHEP::mm);
+  posT[12] =  G4ThreeVector(0.25*CLHEP::mm, -0.15*CLHEP::mm , 0.*CLHEP::mm);
+  posT[13] =  G4ThreeVector(-0.1*CLHEP::mm, 0.0*CLHEP::mm , 0.*CLHEP::mm);
+  posT[14] =  G4ThreeVector(0.5*CLHEP::mm, -0.2*CLHEP::mm , 0.*CLHEP::mm);
+  posT[15] =  G4ThreeVector(0.2*CLHEP::mm, 0.3*CLHEP::mm , 0.*CLHEP::mm);
 
 
   for(size_t ii=0; ii<16; ii++) posT[ii] += G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, tiltedTelescopePosition + ChamberSpacing*G4double(ii+1));
