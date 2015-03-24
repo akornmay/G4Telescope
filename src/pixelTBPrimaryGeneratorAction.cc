@@ -77,7 +77,7 @@ void pixelTBPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   //  G4int n_particle;
   //  n_particle = CLHEP::RandLandau::shoot();
   //n_particle = 2;
-  n_particle = fHistoManager->NumberOfP;
+  n_particle = 1;//fHistoManager->NumberOfP;
   //G4cout << "xxn_particle is " << n_particle << G4endl;
 
   for(int i =0; i<n_particle; i++){
@@ -102,15 +102,15 @@ void pixelTBPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 
   G4double xdir = 0.;
   G4double ydir = 0.;
-  
-  xdir = 0.01*(G4UniformRand()-0.5);
-  ydir = 0.01*(G4UniformRand()-0.5);
+  G4double telescopelength = 7 * 16*CLHEP::mm;
+  xdir = 1*CLHEP::mm * G4RandGauss::shoot(0,0.1);
+  ydir = 1*CLHEP::mm * G4RandGauss::shoot(0,0.055);
   //  G4cout << " particle dir " << xdir << " / " << ydir << G4endl;
-  particleGun->SetParticleMomentumDirection(G4ThreeVector(xdir, ydir, 1.));
+  particleGun->SetParticleMomentumDirection(G4ThreeVector(xdir, ydir, telescopelength));
  
   particleGun->GeneratePrimaryVertex(anEvent);
   }
-  G4cout << "Done" << G4endl;
+  //G4cout << "Done" << G4endl;
 
 }
 
