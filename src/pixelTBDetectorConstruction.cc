@@ -342,8 +342,28 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
   G4double ysize = 0.10*CLHEP::mm*80/2;
 
 
-  for(size_t ii=0; ii<16; ii++) posT[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, tiltedTelescopePosition + ChamberSpacing*G4double(ii+1));
-  //for(size_t ii=4; ii<8; ii++) posT[ii] = G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, ChamberSpacing*G4double(ii+2));
+  //apply some missalignment
+  //  straight telescope
+  posT[0] =  G4ThreeVector(0.*CLHEP::mm, 0.*CLHEP::mm , 0.*CLHEP::mm);
+  posT[1] =  G4ThreeVector(0.05*CLHEP::mm, 0.02*CLHEP::mm , 0.*CLHEP::mm);
+  posT[2] =  G4ThreeVector(-0.03*CLHEP::mm, 0.05*CLHEP::mm , 0.*CLHEP::mm);
+  posT[3] =  G4ThreeVector(-0.02*CLHEP::mm, -0.03*CLHEP::mm , 0.*CLHEP::mm);
+  posT[4] =  G4ThreeVector(0.025*CLHEP::mm, 0.015*CLHEP::mm , 0.*CLHEP::mm);
+  posT[5] =  G4ThreeVector(-0.01*CLHEP::mm, -0.015*CLHEP::mm , 0.*CLHEP::mm);
+  posT[6] =  G4ThreeVector(0.05*CLHEP::mm, -0.02*CLHEP::mm , 0.*CLHEP::mm);
+  posT[7] =  G4ThreeVector(0.02*CLHEP::mm, 0.03*CLHEP::mm , 0.*CLHEP::mm);
+  //  tilted telescope
+  posT[8] =  G4ThreeVector(0.*CLHEP::mm, 0.*CLHEP::mm , 0.*CLHEP::mm);
+  posT[9] =  G4ThreeVector(0.05*CLHEP::mm, 0.02*CLHEP::mm , 0.*CLHEP::mm);
+  posT[10] =  G4ThreeVector(-0.03*CLHEP::mm, 0.05*CLHEP::mm , 0.*CLHEP::mm);
+  posT[11] =  G4ThreeVector(-0.02*CLHEP::mm, -0.03*CLHEP::mm , 0.*CLHEP::mm);
+  posT[12] =  G4ThreeVector(0.025*CLHEP::mm, 0.015*CLHEP::mm , 0.*CLHEP::mm);
+  posT[13] =  G4ThreeVector(-0.01*CLHEP::mm, -0.015*CLHEP::mm , 0.*CLHEP::mm);
+  posT[14] =  G4ThreeVector(0.05*CLHEP::mm, -0.02*CLHEP::mm , 0.*CLHEP::mm);
+  posT[15] =  G4ThreeVector(0.02*CLHEP::mm, 0.03*CLHEP::mm , 0.*CLHEP::mm);
+
+
+  for(size_t ii=0; ii<16; ii++) posT[ii] += G4ThreeVector(0.0*CLHEP::mm, 0.0*CLHEP::mm, tiltedTelescopePosition + ChamberSpacing*G4double(ii+1));
   G4RotationMatrix rotmatrix = *mirror_rot;
   rotmatrix.invert();
 
@@ -413,8 +433,8 @@ G4VPhysicalVolume* pixelTBDetectorConstruction::Construct()
   G4double firstPosition = -trackerSize + 0.5*ChamberWidth;
   G4double firstLength = ChamberXShalfwidth;
   //G4double lastLength  = ChamberXShalfwidth;
-  fCSZonePercentageX = 0.2;
-  fCSZonePercentageY = 0.2;
+  fCSZonePercentageX = 0.5* 0.073;
+  fCSZonePercentageY = 0.5* 0.11;
 			   
   // dummy value : kZAxis -- modified by parameterised volume
   //
