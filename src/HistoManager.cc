@@ -214,7 +214,7 @@ void HistoManager::save()
 void HistoManager::AddHit(pixelTBTrackerHit* Hit,G4int EventNumber, G4int &returnROC)
 {
   //energy
-  energy = Hit->GetEdep();
+  energy = Hit->GetEdep()/CLHEP::keV;
 
   //  G4double xray_offset = -600. ;
   //  G4double xray_slope = 50. ;
