@@ -737,10 +737,7 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 	   }
        }
    }
-
-
-
- if((chamberNo%nCol)%3 == 1) // this gives the COL
+ else if((chamberNo%nCol)%3 == 1) // this gives the COL
    {
      if((chamberNo/nCol)%3 == 1) // this gives the ROW
        {
@@ -874,9 +871,7 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 	   }
        }
    }
-
-
- if((chamberNo%nCol)%3 == 2) // this gives the COL
+ else if((chamberNo%nCol)%3 == 2) // this gives the COL
    {
      if((chamberNo/nCol)%3 == 1) // this gives the ROW
        {
@@ -934,7 +929,7 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 	   }
 
        }
-     if((chamberNo/nCol)%3 == 0) // this gives the ROW
+     if((chamberNo/nCol)%3 == 2) // this gives the ROW
        {
 	 //this is a right-top hit, we have to share some charge to the neigboring pixels
 	 if(Col != 51 && Row != 79)
@@ -1093,7 +1088,7 @@ void HistoManager::CollectHits(pixelTBTrackerHit* Hit, G4int EventNumber, std::m
 	   }
        }
 
-     if((chamberNo/nCol)%3 == 2) // this gives the ROW
+     if((chamberNo/nCol)%3 == 0) // this gives the ROW
        {
 	 //this is a right-bottom hit, we have to share some charge to the neighboring pixel
 	 if(Col != 51 && Row != 0)

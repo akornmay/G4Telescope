@@ -63,7 +63,7 @@ pixelTBEventAction::~pixelTBEventAction()
  
 void pixelTBEventAction::BeginOfEventAction(const G4Event*)
 {
-  fHistManager->GetNumbersOfParticlesInEvent();
+
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -129,6 +129,7 @@ void pixelTBEventAction::EndOfEventAction(const G4Event* evt)
 
 	  for(std::map<int,pixelTBTrackerHit>::iterator it = mapofHits.begin(); it != mapofHits.end(); ++it)
 	    {
+
 	      fHistManager->AddHit(&(it->second),evt->GetEventID(),returnROC);
 	      
 	      if(returnROC > maxROC)
